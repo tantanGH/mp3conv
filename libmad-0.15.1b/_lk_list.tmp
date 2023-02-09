@@ -1,0 +1,16 @@
+_build/bit.o
+_build/decoder.o
+_build/fixed.o
+_build/frame.o
+_build/huffman.o
+_build/layer3.o
+_build/layer12.o
+_build/stream.o
+_build/synth.o
+_build/timer.o
+_build/version.o
+CLIB.L
+DOSLIB.L
+IOCSLIB.L
+FLOATFNC.L
+libgcc.a
