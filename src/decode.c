@@ -52,6 +52,7 @@ static enum mad_flow mad_callback_header(void* data, const MAD_HEADER* header) {
   
   if (g_decode->mp3_sample_rate < 0) {
     g_decode->mp3_sample_rate = header->samplerate;
+    printf("MP3 sampling rate: %d [Hz]\n", header->samplerate);
   }
   
   return MAD_FLOW_CONTINUE;
@@ -92,6 +93,7 @@ static enum mad_flow mad_callback_output(void* data, const MAD_HEADER* header, M
 
   if (g_decode->mp3_num_channels < 0) {
     g_decode->mp3_num_channels = nchannels;
+    printf("MP3 channels: %s\n", nchannels == 2 ? "stereo" : "mono");
   }
 
   int16_t* pcm_buffer = g_decode->pcm->buffer;

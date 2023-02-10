@@ -33,6 +33,14 @@ MP3EXxxx.ZIP をダウンロードして展開し、MP3EX.X をパスの通っ�
 MP3ファイルは可変ビットレートのものにも対応していますが、MP3ファイル全体をメモリに読み込むようになっているため、メモリが沢山必要ですw
 `-u` オプションを利用するとMP3読み込みバッファに060turbo.sysのハイメモリを使用します。060turbo/PhantomXで利用できるはずです。
 
+出力された長時間 ADPCM 形式データについては、`adpcmplay.x` などで再生できます。
+
+[ADPCMPLAY.X / ADPCMREC.X](https://www.vector.co.jp/soft/x68/art/se014381.html)
+
+同様に長時間の S44 形式データについては、`pcm3pcm.x` などでまーきゅりーゆにっとから直接再生できます。
+
+[PCM3PCM.X](https://www.vector.co.jp/soft/x68/art/se019752.html)
+
 ---
 
 ### License

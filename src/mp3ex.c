@@ -36,7 +36,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   uint8_t* mp3_file_name = NULL;
 
   // output file name
-  uint8_t* out_file_name = NULL;
+  uint8_t* pcm_file_name = NULL;
 
   // mp3 read buffer pointer
   uint8_t* mp3_buffer = NULL;
@@ -62,7 +62,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   for (int16_t i = 1; i < argc; i++) {
     if (argv[i][0] == '-' && strlen(argv[i]) >= 2) {
       if (argv[i][1] == 'o' && i+1<argc) {
-        out_file_name = argv[i+1];
+        pcm_file_name = argv[i+1];
       } else if (argv[i][1] == 'a') {
         out_format = 0;
       } else if (argv[i][1] == 'p') {
@@ -79,8 +79,8 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     } else {
       if (mp3_file_name == NULL) {
         mp3_file_name = argv[i];
-      } else if (out_file_name == NULL) {
-        out_file_name = argv[i];
+      } else if (pcm_file_name == NULL) {
+        pcm_file_name = argv[i];
       }
     }
   }
@@ -90,24 +90,12 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     goto exit;
   }
 
-  if (out_file_name == NULL) {
+  if (pcm_file_name == NULL) {
     printf("error: no output file.\n");
     goto exit;
   }
 
-  // overwrite check
-  struct stat stat_buf;
-  if (stat(out_file_name, &stat_buf) == 0) {
-    printf("warning: output file (%s) already exists. overwrite? (y/n)", out_file_name);
-    uint8_t c;
-    scanf("%c",&c);
-    if (c != 'y' && c != 'Y') {
-      printf("canceled.\n");
-      goto catch;            
-    }
-  }
-
-  // open MP3 file
+  // open input MP3 file
   FILE* fp_mp3 = fopen(mp3_file_name, "rb");
   if (fp_mp3 == NULL) {
     printf("error: cannot open mp3 file (%s).\n", mp3_file_name);
@@ -158,12 +146,25 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   fclose(fp_mp3);
   fp_mp3 = NULL;
 
-  // open output file
-  FILE* fp_out = fopen(out_file_name, "wb");
-  if (fp_out == NULL) {
-    printf("error: cannot open output file (%s).\n", out_file_name);
+  // overwrite check
+  struct stat stat_buf;
+  if (stat(pcm_file_name, &stat_buf) == 0) {
+    printf("warning: output file (%s) already exists. overwrite? (y/n)", pcm_file_name);
+    uint8_t c;
+    scanf("%c",&c);
+    if (c != 'y' && c != 'Y') {
+      printf("canceled.\n");
+      goto catch;            
+    }
+  }
+
+  // open output PCM file
+  FILE* fp_pcm = fopen(pcm_file_name, "wb");
+  if (fp_pcm == NULL) {
+    printf("error: cannot open output file (%s).\n", pcm_file_name);
     goto catch;
   }
+  printf("PCM file name: %s\n", pcm_file_name);
 
   // init pcm handle
   if (pcm_init(&pcm, use_high_memory) != 0) {
@@ -172,13 +173,13 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   }
 
   // init adpcm handle
-  if (adpcm_init(&adpcm, out_file_name == NULL ? 1 : 0) != 0) {
+  if (adpcm_init(&adpcm, pcm_file_name == NULL ? 1 : 0) != 0) {
     printf("error: adpcm handle init error.\n");
     goto catch;
   }
 
   // init mp3 decoder handle
-  if (decode_init(&mp3, &pcm, &adpcm, out_format, fp_out) != 0) {
+  if (decode_init(&mp3, &pcm, &adpcm, out_format, fp_pcm) != 0) {
     printf("mp3 decode handle init error.\n");
     goto catch;
   }
@@ -215,10 +216,10 @@ catch:
     fp_mp3 = NULL;
   }
 
-  // close output file if still opened
-  if (fp_out != NULL) {
-    fclose(fp_out);
-    fp_out = NULL;
+  // close pcm file if still opened
+  if (fp_pcm != NULL) {
+    fclose(fp_pcm);
+    fp_pcm = NULL;
   }
 
 exit:

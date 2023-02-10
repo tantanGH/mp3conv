@@ -28,7 +28,7 @@ DOCUMENT_FILE = MP3EX.DOC
 PACKAGE_FILE = ../MP3EX010.ZIP
 
 # ヘッダ検索パス
-INCLUDE_FLAGS = -I${XDEV68K_DIR}/include/xc -I${XDEV68K_DIR}/include/xdev68k -I../libmad-0.15.1b
+INCLUDE_FLAGS = -I${XDEV68K_DIR}/include/xc -I${XDEV68K_DIR}/include/xdev68k -I${XDEV68K_DIR}/include/mad
 
 # コンパイルフラグ
 COMMON_FLAGS = -m68000 -O2 $(INCLUDE_FLAGS)
@@ -50,7 +50,7 @@ LIBS =\
 	${XDEV68K_DIR}/lib/xc/DOSLIB.L \
 	${XDEV68K_DIR}/lib/xc/IOCSLIB.L \
 	${XDEV68K_DIR}/lib/xc/FLOATFNC.L \
-	../libmad-0.15.1b/libmad.a \
+	${XDEV68K_DIR}/lib/mad/libmad.a \
 	${XDEV68K_DIR}/lib/m68k_elf/m68000/libgcc.a
 
 # 中間ファイル生成用ディレクトリ
