@@ -4,7 +4,9 @@ MP3 to PCM converter for X680x0/Human68k
 
 MP3ファイルを X68K(MSM6258V) ADPCM形式ファイル または 16bit符号付き big endian raw PCM形式ファイル(`*.s44`等) に変換します。
 
-X680x0/Human68k 上で動作します。コマンドラインツールなので run68 上でも動作します。
+X680x0/Human68k 上で動作します。
+
+注意：MP3のリアルタイム再生は将来やるかもしれませんが現状では対応していません。
 
 ---
 
