@@ -124,11 +124,15 @@ static enum mad_flow mad_callback_output(void* data, const MAD_HEADER* header, M
   }
 
   if (g_decode->out_format == 0) {
+    int16_t orig_buffer_id = g_decode->adpcm->current_buffer_id;
     adpcm_encode(g_decode->adpcm, pcm_buffer, ofs * 2, 16, nchannels);
     g_decode->pcm->buffer_ofs = 0;          // clear pcm buffer
     if (g_decode->out_fp != NULL) {
-      adpcm_write(g_decode->adpcm, g_decode->out_fp, 0);
-      putchar('.');
+      int16_t buffer_id = g_decode->adpcm->current_buffer_id;
+      if (buffer_id != orig_buffer_id) {
+        adpcm_write_buffer(g_decode->adpcm, g_decode->out_fp, g_decode->adpcm->buffers[ orig_buffer_id ], ADPCM_BUFFER_SIZE);
+        putchar('.');
+      }
     }
   } else {
     if (g_decode->out_fp != NULL) {
@@ -162,10 +166,9 @@ int32_t decode_init(MP3_DECODE_HANDLE* decode, PCM_HANDLE* pcm, ADPCM_HANDLE* ad
 //  close decoder handle
 //
 void decode_close(MP3_DECODE_HANDLE* decode) {
-  if (decode->out_fp != NULL) {
-    if (decode->out_format == 0) {
-      adpcm_write(decode->adpcm, decode->out_fp, 1);    // flush adpcm last byte
-    }
+  if (decode->out_fp != NULL && decode->out_format == 0) {
+    // write the remained data
+    adpcm_write(decode->adpcm, decode->out_fp);
   }
 }
 

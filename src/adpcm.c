@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <iocslib.h>
 #include "adpcm.h"
 #include "memory.h"
 
@@ -92,23 +93,51 @@ static uint8_t encode(int16_t current_data, int16_t last_estimate, int16_t* step
 //
 //  initialize adpcm handle
 //
-int32_t adpcm_init(ADPCM_HANDLE* adpcm, size_t buffer_len) {
+int32_t adpcm_init(ADPCM_HANDLE* adpcm, int16_t play_mode) {
+
+  adpcm->play_mode = play_mode;
+
   adpcm->step_index = 0;
   adpcm->last_estimate = 0;
   adpcm->num_samples = 0;
-  adpcm->buffer_len = buffer_len;
+
+  adpcm->current_buffer_id = 0;
+  adpcm->buffer_len = ADPCM_BUFFER_SIZE;
   adpcm->buffer_ofs = 0;
-  adpcm->buffer = malloc_himem(buffer_len, 0);      // use main memory for DMAC
-  return (adpcm->buffer != NULL) ? 0 : -1;
+
+  // initially allocate 2 buffers only
+  adpcm->buffers[0] = malloc_himem(adpcm->buffer_len, 0);       // use main memory
+  adpcm->buffers[1] = malloc_himem(adpcm->buffer_len, 0);       // use main memory
+
+  adpcm->chain_tables[0].adr = (uint32_t)adpcm->buffers[0];
+  adpcm->chain_tables[0].len = adpcm->buffer_len;
+  adpcm->chain_tables[0].next = &(adpcm->chain_tables[1]);
+
+  adpcm->chain_tables[1].adr = (uint32_t)adpcm->buffers[1];
+  adpcm->chain_tables[1].len = 0;
+  adpcm->chain_tables[1].next = 0;
+
+  for (int16_t i = 2; i < ADPCM_BUFFER_COUNT; i++) {
+    adpcm->buffers[i] = NULL;
+    adpcm->chain_tables[i].adr = NULL;
+    adpcm->chain_tables[i].len = 0;
+    adpcm->chain_tables[i].next = 0;
+  }
+
+  return (adpcm->buffers[0] != NULL && adpcm->buffers[1] != NULL) ? 0 : -1;
 }
 
 //
 //  close adpcm handle
 //
 void adpcm_close(ADPCM_HANDLE* adpcm) {
-  if (adpcm->buffer != NULL) {
-    free_himem(adpcm->buffer, 0);
-    adpcm->buffer = 0;
+
+  // reclaim buffers
+  for (int16_t i = 0; i < ADPCM_BUFFER_COUNT; i++) {
+    if (adpcm->buffers[i] != NULL) {
+      free_himem(adpcm->buffers[i], 0);
+      adpcm->buffers[i] = NULL;
+    }
   }
 }
 
@@ -160,15 +189,38 @@ int32_t adpcm_encode(ADPCM_HANDLE* adpcm, void* pcm_buffer, size_t pcm_buffer_le
     uint8_t code = encode(xx, adpcm->last_estimate, &adpcm->step_index, &new_estimate);
     adpcm->last_estimate = new_estimate;
 
-    // fill a byte in this order: lower 4 bit -> upper 4 bit
+    // current buffer is full?
+    int16_t orig = adpcm->current_buffer_id;
     if (adpcm->buffer_ofs >= adpcm->buffer_len) {
-      printf("error: adpcm write buffer shortage.\n");
-      goto exit;
+      if (orig == 0 && adpcm->play_mode) {
+        if (ADPCMSNS() == 0) {
+          // play adpcm
+          ADPCMLOT(&(adpcm->chain_tables[ orig ]), ADPCM_MODE);
+        }
+      }
+      adpcm->current_buffer_id = (adpcm->current_buffer_id + 1) % ADPCM_BUFFER_COUNT;
+      int16_t cur = adpcm->current_buffer_id;
+      if (adpcm->buffers[ cur ] == NULL) {
+        adpcm->buffers[ cur ] = malloc_himem(ADPCM_BUFFER_SIZE, 0);
+        if (adpcm->buffers[ cur ] == NULL) {
+          printf("error: memory allocation error for adpcm.\n");
+          goto exit;
+        }
+      }
+      adpcm->buffer_ofs = 0;
+      adpcm->chain_tables[ orig ].adr = (uint32_t)adpcm->buffers[ orig ];
+      adpcm->chain_tables[ orig ].len = adpcm->buffer_len;
+      adpcm->chain_tables[ orig ].next = &(adpcm->chain_tables[ cur ]);
+      adpcm->chain_tables[ cur ].adr = (uint32_t)adpcm->buffers[ cur ];
+      adpcm->chain_tables[ cur ].len = 0;
+      adpcm->chain_tables[ cur ].next = 0;
     }
+
+    // fill a byte in this order: lower 4 bit -> upper 4 bit
     if ((adpcm->num_samples % 2) == 0) {
-      adpcm->buffer[ adpcm->buffer_ofs ] = code;
+      adpcm->buffers[ adpcm->current_buffer_id ][ adpcm->buffer_ofs ] = code;
     } else {
-      adpcm->buffer[ adpcm->buffer_ofs ] |= code << 4;
+      adpcm->buffers[ adpcm->current_buffer_id ][ adpcm->buffer_ofs ] |= code << 4;
       adpcm->buffer_ofs++;
     }
     adpcm->num_samples++;
@@ -182,9 +234,9 @@ exit:
 }
 
 //
-//  write adpcm data to file
+//  write specific adpcm buffer data to file
 //
-int32_t adpcm_write(ADPCM_HANDLE* adpcm, FILE* fp, int16_t flush) {
+int32_t adpcm_write_buffer(ADPCM_HANDLE* adpcm, FILE* fp, uint8_t* buffer, size_t len) {
 
   // default return code
   int32_t rc = -1;
@@ -194,25 +246,20 @@ int32_t adpcm_write(ADPCM_HANDLE* adpcm, FILE* fp, int16_t flush) {
     goto exit;
   }
 
-  if ((adpcm->num_samples % 2) == 0 || flush) {
-    // can write all bytes in buffer
-    size_t written = 0;
-    do {
-      written += fwrite(adpcm->buffer + written, 1, adpcm->buffer_ofs - written, fp);
-    } while (written < adpcm->buffer_ofs);
-    adpcm->buffer_ofs = 0;
-  } else {
-    // cannot write last incomplete 1 byte
-    size_t written = 0;
-    do {
-      written += fwrite(adpcm->buffer + written, 1, adpcm->buffer_ofs - written, fp);
-    } while (written < (adpcm->buffer_ofs - 1));
-    adpcm->buffer[0] = adpcm->buffer[ adpcm->buffer_ofs ];
-    adpcm->buffer_ofs = 0;
-  }
+  size_t written = 0;
+  do {
+    written += fwrite(buffer + written, 1, len - written, fp);
+  } while (written < len);
 
   rc = 0;
 
 exit:
   return rc;
+}
+
+//
+//  write active adpcm buffer data to file
+//
+int32_t adpcm_write(ADPCM_HANDLE* adpcm, FILE* fp) {
+  return adpcm_write_buffer(adpcm, fp, adpcm->buffers[ adpcm->current_buffer_id ], adpcm->buffer_ofs);
 }

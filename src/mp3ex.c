@@ -139,7 +139,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   }
 
   // init adpcm handle
-  if (adpcm_init(&adpcm, ADPCM_BUFFER_LEN) != 0) {
+  if (adpcm_init(&adpcm, out_file_name == NULL ? 1 : 0) != 0) {
     printf("error: adpcm handle init error.\n");
     goto catch;
   }
