@@ -38,11 +38,11 @@ MP3EXxxx.ZIP をダウンロードして展開し、MP3EX.X をパスの通っ�
 
 `-u` オプションを利用するとMP3読み込みバッファに060turbo.sysのハイメモリを使用します。060turbo または PhantomX 060モードで利用できるはずです。(060turboのみ実機とエミュレータで確認、PhantomXは未確認)
 
-出力された長時間 ADPCM 形式データについては、`adpcmplay.x` などで再生できます。
+出力された長時間 ADPCM 形式データについては、藤原尚伸さんの `adpcmplay.x` などで再生できます。
 
 [ADPCMPLAY.X / ADPCMREC.X](https://www.vector.co.jp/soft/x68/art/se014381.html)
 
-同様に長時間の S44 形式データについては、`pcm3pcm.x` などでまーきゅりーゆにっとから直接再生できます。
+同様に長時間の S44 形式データについては、NOZさんの `pcm3pcm.x` などでまーきゅりーゆにっとから直接再生できます。
 
 [PCM3PCM.X](https://www.vector.co.jp/soft/x68/art/se019752.html)
 
