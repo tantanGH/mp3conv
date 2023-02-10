@@ -13,11 +13,11 @@
 //  show help messages
 //
 static void show_help_message() {
-  printf("usage: mp3ex.x [options] <mp3-file>\n");
+  printf("usage: mp3ex.x [options] <mp3-file> <pcm-file>\n");
   printf("options:\n");
-  printf("   -o <out-file> ... output file name\n");
   printf("   -a ... output in ADPCM format (default)\n");
-  printf("   -p ... output in PCM format\n");
+  printf("   -p ... output in 16bit PCM format\n");
+  printf("   -u ... use 060turbo high memory\n");
   printf("   -h ... show help message\n");
 }
 
@@ -28,6 +28,9 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
 
   // output format (0:ADPCM, 1:PCM)
   int16_t out_format = 0;
+
+  // use high memory
+  int16_t use_high_memory = 0;
 
   // input file name
   uint8_t* mp3_file_name = NULL;
@@ -48,7 +51,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   MP3_DECODE_HANDLE mp3 = { 0 };
 
   // show title and version
-  printf("MP3EX.X - MP3 to PCM converter and player version " VERSION " by tantan\n");
+  printf("MP3EX.X - MP3 to PCM converter version " VERSION " by tantan\n");
 
   // argument options
   if (argc <= 1) {
@@ -64,6 +67,8 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
         out_format = 0;
       } else if (argv[i][1] == 'p') {
         out_format = 1;
+      } else if (argv[i][1] == 'u') {
+        use_high_memory = 1;
       } else if (argv[i][1] == 'h') {
         show_help_message();
         goto exit;
@@ -72,13 +77,34 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
         goto exit;
       }
     } else {
-      mp3_file_name = argv[i];
+      if (mp3_file_name == NULL) {
+        mp3_file_name = argv[i];
+      } else if (out_file_name == NULL) {
+        out_file_name = argv[i];
+      }
     }
   }
 
   if (mp3_file_name == NULL) {
     printf("error: no input file.\n");
     goto exit;
+  }
+
+  if (out_file_name == NULL) {
+    printf("error: no output file.\n");
+    goto exit;
+  }
+
+  // overwrite check
+  struct stat stat_buf;
+  if (stat(out_file_name, &stat_buf) == 0) {
+    printf("warning: output file (%s) already exists. overwrite? (y/n)", out_file_name);
+    uint8_t c;
+    scanf("%c",&c);
+    if (c != 'y' && c != 'Y') {
+      printf("canceled.\n");
+      goto catch;            
+    }
   }
 
   // open MP3 file
@@ -115,14 +141,14 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   printf("MP3 file name: %s\n", mp3_file_name);
   printf("MP3 data size: %d [bytes]\n", mp3_len);
 
-  // allocate buffer in high memory
-  mp3_buffer = malloc_himem(mp3_len, 1);
+  // allocate mp3 read buffer
+  mp3_buffer = malloc_himem(mp3_len, use_high_memory);
   if (mp3_buffer == NULL) {
-    printf("error: cannot allocate high memory buffer for mp3.\n");
+    printf("error: cannot allocate memory for mp3 read.\n");
     goto catch;
   }
 
-  // read mp3 to high memory
+  // read mp3
   uint32_t ofs = 0;
   size_t len;
   do {
@@ -132,8 +158,15 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   fclose(fp_mp3);
   fp_mp3 = NULL;
 
+  // open output file
+  FILE* fp_out = fopen(out_file_name, "wb");
+  if (fp_out == NULL) {
+    printf("error: cannot open output file (%s).\n", out_file_name);
+    goto catch;
+  }
+
   // init pcm handle
-  if (pcm_init(&pcm, PCM_BUFFER_LEN) != 0) {
+  if (pcm_init(&pcm, use_high_memory) != 0) {
     printf("error: pcm handle init error.\n");
     goto catch;
   }
@@ -142,28 +175,6 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   if (adpcm_init(&adpcm, out_file_name == NULL ? 1 : 0) != 0) {
     printf("error: adpcm handle init error.\n");
     goto catch;
-  }
-
-  // open output file
-  FILE* fp_out = NULL;
-  if (out_file_name != NULL) {
-
-    struct stat stat_buf;
-    if (stat(out_file_name, &stat_buf) == 0) {
-      printf("warning: output file (%s) already exists. overwrite? (y/n)", out_file_name);
-      uint8_t c;
-      scanf("%c",&c);
-      if (c != 'y' && c != 'Y') {
-        printf("canceled.\n");
-        goto catch;            
-      }
-    }
-
-    fp_out = fopen(out_file_name, "wb");
-    if (fp_out == NULL) {
-      printf("error: cannot open output file (%s).\n", out_file_name);
-      goto catch;
-    }
   }
 
   // init mp3 decoder handle
@@ -183,22 +194,28 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
 
 catch:
 
-  // close handlers
+  // close decoder handle
   decode_close(&mp3);
+
+  // close adpcm handle
   adpcm_close(&adpcm);
+
+  // close pcm handle
   pcm_close(&pcm);
 
   // reclaim mp3 buffer high memory
   if (mp3_buffer != NULL) {
-    free_himem(mp3_buffer, 1);
+    free_himem(mp3_buffer, use_high_memory);
     mp3_buffer = NULL;
   }
 
-  // close files if opened
+  // close mp3 file if still opened
   if (fp_mp3 != NULL) {
     fclose(fp_mp3);
     fp_mp3 = NULL;
   }
+
+  // close output file if still opened
   if (fp_out != NULL) {
     fclose(fp_out);
     fp_out = NULL;

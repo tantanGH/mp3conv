@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
-#include <iocslib.h>
+//#include <iocslib.h>
 #include "adpcm.h"
 #include "memory.h"
 
 //
-//  MSM6258 ADPCM constant tables
+//  MSM6258V ADPCM constant tables
 //
 static const int16_t step_adjust[] = { -1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8 };
 
@@ -16,7 +16,7 @@ static const int16_t step_size[] = {
        337, 371, 408, 449, 494, 544, 598, 658, 724, 796, 876, 963, 1060, 1166, 1282, 1411, 1552 };
 
 //
-//  MSM6258 ADPCM decode
+//  MSM6258V ADPCM decode
 //
 static int16_t decode(uint8_t code, int16_t* step_index, int16_t last_data) {
 
@@ -59,7 +59,7 @@ static int16_t decode(uint8_t code, int16_t* step_index, int16_t last_data) {
 }
 
 //
-//  MSM6258 ADPCM encode
+//  MSM6258V ADPCM encode
 //
 static uint8_t encode(int16_t current_data, int16_t last_estimate, int16_t* step_index, int16_t* new_estimate) {
 
@@ -95,7 +95,9 @@ static uint8_t encode(int16_t current_data, int16_t last_estimate, int16_t* step
 //
 int32_t adpcm_init(ADPCM_HANDLE* adpcm, int16_t play_mode) {
 
-  adpcm->play_mode = play_mode;
+  int32_t rc = -1;
+
+  //adpcm->play_mode = play_mode;
 
   adpcm->step_index = 0;
   adpcm->last_estimate = 0;
@@ -105,26 +107,20 @@ int32_t adpcm_init(ADPCM_HANDLE* adpcm, int16_t play_mode) {
   adpcm->buffer_len = ADPCM_BUFFER_SIZE;
   adpcm->buffer_ofs = 0;
 
-  // initially allocate 2 buffers only
-  adpcm->buffers[0] = malloc_himem(adpcm->buffer_len, 0);       // use main memory
-  adpcm->buffers[1] = malloc_himem(adpcm->buffer_len, 0);       // use main memory
-
-  adpcm->chain_tables[0].adr = (uint32_t)adpcm->buffers[0];
-  adpcm->chain_tables[0].len = adpcm->buffer_len;
-  adpcm->chain_tables[0].next = &(adpcm->chain_tables[1]);
-
-  adpcm->chain_tables[1].adr = (uint32_t)adpcm->buffers[1];
-  adpcm->chain_tables[1].len = 0;
-  adpcm->chain_tables[1].next = 0;
-
-  for (int16_t i = 2; i < ADPCM_BUFFER_COUNT; i++) {
-    adpcm->buffers[i] = NULL;
-    adpcm->chain_tables[i].adr = NULL;
-    adpcm->chain_tables[i].len = 0;
-    adpcm->chain_tables[i].next = 0;
+  for (int16_t i = 0; i < ADPCM_BUFFER_COUNT; i++) {
+    adpcm->buffers[i] = malloc_himem(adpcm->buffer_len, 0);     // use main memory
+    if (adpcm->buffers[i] == NULL) {
+      goto exit;
+    }
+//    adpcm->chain_tables[i].adr = (uint32_t)adpcm->buffers[i];
+//    adpcm->chain_tables[i].len = adpcm->buffer_len;
+//    adpcm->chain_tables[i].next = &(adpcm->chain_tables[ ( i + 1 ) % ADPCM_BUFFER_COUNT ]);
   }
 
-  return (adpcm->buffers[0] != NULL && adpcm->buffers[1] != NULL) ? 0 : -1;
+  rc = 0;
+
+exit:
+  return rc;
 }
 
 //
@@ -190,37 +186,21 @@ int32_t adpcm_encode(ADPCM_HANDLE* adpcm, void* pcm_buffer, size_t pcm_buffer_le
     adpcm->last_estimate = new_estimate;
 
     // current buffer is full?
-    int16_t orig = adpcm->current_buffer_id;
     if (adpcm->buffer_ofs >= adpcm->buffer_len) {
-      if (orig == 0 && adpcm->play_mode) {
-        if (ADPCMSNS() == 0) {
-          // play adpcm
-          ADPCMLOT(&(adpcm->chain_tables[ orig ]), ADPCM_MODE);
-        }
-      }
-      adpcm->current_buffer_id = (adpcm->current_buffer_id + 1) % ADPCM_BUFFER_COUNT;
-      int16_t cur = adpcm->current_buffer_id;
-      if (adpcm->buffers[ cur ] == NULL) {
-        adpcm->buffers[ cur ] = malloc_himem(ADPCM_BUFFER_SIZE, 0);
-        if (adpcm->buffers[ cur ] == NULL) {
-          printf("error: memory allocation error for adpcm.\n");
-          goto exit;
-        }
-      }
+      int16_t orig = adpcm->current_buffer_id;
+//      if (orig == 0 && adpcm->play_mode) {
+//        adpcm_play(adpcm);
+//      }
+      adpcm->current_buffer_id = (orig + 1) % ADPCM_BUFFER_COUNT;
       adpcm->buffer_ofs = 0;
-      adpcm->chain_tables[ orig ].adr = (uint32_t)adpcm->buffers[ orig ];
-      adpcm->chain_tables[ orig ].len = adpcm->buffer_len;
-      adpcm->chain_tables[ orig ].next = &(adpcm->chain_tables[ cur ]);
-      adpcm->chain_tables[ cur ].adr = (uint32_t)adpcm->buffers[ cur ];
-      adpcm->chain_tables[ cur ].len = 0;
-      adpcm->chain_tables[ cur ].next = 0;
     }
 
     // fill a byte in this order: lower 4 bit -> upper 4 bit
+    uint8_t* buffer = adpcm->buffers[ adpcm->current_buffer_id ];
     if ((adpcm->num_samples % 2) == 0) {
-      adpcm->buffers[ adpcm->current_buffer_id ][ adpcm->buffer_ofs ] = code;
+      buffer[ adpcm->buffer_ofs ] = code;
     } else {
-      adpcm->buffers[ adpcm->current_buffer_id ][ adpcm->buffer_ofs ] |= code << 4;
+      buffer[ adpcm->buffer_ofs ] |= code << 4;
       adpcm->buffer_ofs++;
     }
     adpcm->num_samples++;
@@ -263,3 +243,21 @@ exit:
 int32_t adpcm_write(ADPCM_HANDLE* adpcm, FILE* fp) {
   return adpcm_write_buffer(adpcm, fp, adpcm->buffers[ adpcm->current_buffer_id ], adpcm->buffer_ofs);
 }
+
+/*
+//
+//  adpcm play
+//
+void adpcm_play(ADPCM_HANDLE* adpcm) {
+  if (ADPCMSNS() == 0) {
+    ADPCMLOT(&(adpcm->chain_tables[ 0 ]), ADPCM_MODE);
+  }
+}
+
+//
+//  adpcm stop
+//
+void adpcm_stop(ADPCM_HANDLE* adpcm) {
+  ADPCMMOD(0);
+}
+*/

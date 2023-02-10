@@ -7,11 +7,12 @@
 //
 //  initialize pcm handle
 //
-int32_t pcm_init(PCM_HANDLE* pcm, size_t buffer_len) {
+int32_t pcm_init(PCM_HANDLE* pcm, int16_t use_high_memory) {
+  pcm->use_high_memory = use_high_memory;
   pcm->num_samples = 0;
-  pcm->buffer_len = buffer_len;
+  pcm->buffer_len = PCM_BUFFER_LEN;
   pcm->buffer_ofs = 0;
-  pcm->buffer = malloc_himem(buffer_len, 0);      // use main memory for DMAC
+  pcm->buffer = malloc_himem(pcm->buffer_len, pcm->use_high_memory);
   return (pcm->buffer != NULL) ? 0 : -1;
 }
 
@@ -20,7 +21,7 @@ int32_t pcm_init(PCM_HANDLE* pcm, size_t buffer_len) {
 //
 void pcm_close(PCM_HANDLE* pcm) {
   if (pcm->buffer != NULL) {
-    free_himem(pcm->buffer, 0);
+    free_himem(pcm->buffer, pcm->use_high_memory);
     pcm->buffer = 0;
   }
 }
