@@ -42,9 +42,13 @@ MP3EXxxx.ZIP をダウンロードして展開し、MP3EX.X をパスの通っ�
 
 [ADPCMPLAY.X / ADPCMREC.X](https://www.vector.co.jp/soft/x68/art/se014381.html)
 
-同様に長時間の S44 形式データについては、NOZさんの `pcm3pcm.x` などでまーきゅりーゆにっとから直接再生できます。
+同様に長時間の S44 形式データについては、NOZさんの `pcm3pcm.x` などでま〜きゅり〜ゆにっとから直接再生できます。
 
 [PCM3PCM.X](https://www.vector.co.jp/soft/x68/art/se019752.html)
+
+M.Kamadaさんの `s44play.x` を使うとま〜きゅり〜ゆにっと無しでもOPMによるエミュレーションで S44 形式データを再生可能です(要マシンパワー)。
+
+[S44PLAY.X / FMPPLAY.X](http://retropc.net/x68000/software/sound/stereopcm/s44play/)
 
 ---
 
