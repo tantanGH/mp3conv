@@ -22,7 +22,7 @@ int32_t pcm_init(PCM_HANDLE* pcm, int16_t use_high_memory) {
 void pcm_close(PCM_HANDLE* pcm) {
   if (pcm->buffer != NULL) {
     free_himem(pcm->buffer, pcm->use_high_memory);
-    pcm->buffer = 0;
+    pcm->buffer = NULL;
   }
 }
 
