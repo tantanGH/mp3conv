@@ -50,6 +50,12 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   // decoder handle
   MP3_DECODE_HANDLE mp3 = { 0 };
 
+  // mp3 file handle
+  FILE* fp_mp3 = NULL;
+
+  // pcm file handle
+  FILE* fp_pcm = NULL;
+
   // show title and version
   printf("MP3EX.X - MP3 to PCM converter version " VERSION " by tantan\n");
 
@@ -96,7 +102,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   }
 
   // open input MP3 file
-  FILE* fp_mp3 = fopen(mp3_file_name, "rb");
+  fp_mp3 = fopen(mp3_file_name, "rb");
   if (fp_mp3 == NULL) {
     printf("error: cannot open mp3 file (%s).\n", mp3_file_name);
     goto catch;
@@ -159,7 +165,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   }
 
   // open output PCM file
-  FILE* fp_pcm = fopen(pcm_file_name, "wb");
+  fp_pcm = fopen(pcm_file_name, "wb");
   if (fp_pcm == NULL) {
     printf("error: cannot open output file (%s).\n", pcm_file_name);
     goto catch;
