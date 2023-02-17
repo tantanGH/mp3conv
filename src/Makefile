@@ -25,7 +25,7 @@ TARGET_FILE = MP3EX.X
 DOCUMENT_FILE = MP3EX.DOC
 
 # Distribution package 
-PACKAGE_FILE = ../MP3EX011.ZIP
+PACKAGE_FILE = ../MP3EX020.ZIP
 
 # ヘッダ検索パス
 INCLUDE_FLAGS = -I${XDEV68K_DIR}/include/xc -I${XDEV68K_DIR}/include/xdev68k -I${XDEV68K_DIR}/include/mad
@@ -36,7 +36,7 @@ CFLAGS = $(COMMON_FLAGS) -Wno-builtin-declaration-mismatch -fcall-used-d2 -fcall
     -fexec-charset=cp932 -fverbose-asm -fno-defer-pop
 
 # *.c ソースファイル
-C_SRCS = memory.c pcm.c adpcm.c decode.c mp3ex.c
+C_SRCS = memory.c pcm.c adpcm.c decode.c main.c
 
 # *.s ソースファイル
 ASM_SRCS =
