@@ -57,7 +57,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   FILE* fp_pcm = NULL;
 
   // show title and version
-  printf("MP3EX.X - MP3 to PCM converter version " VERSION " by tantan\n");
+  printf("MP3EX.X - MP3 to PCM converter for X680x0 version " VERSION " by tantan\n");
 
   // argument options
   if (argc <= 1) {
