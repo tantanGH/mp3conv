@@ -4,31 +4,25 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
-//#include <iocslib.h>
 
-#define ADPCM_SAMPLE_RATE  (15625)        // 15.625kHz
-#define ADPCM_BUFFER_SIZE  (15625*2)      // 4 sec
-#define ADPCM_BUFFER_COUNT (8)            // 4 * 8 = 32 sec
-//#define ADPCM_MODE         (4*256+3)      // 15.625kHz LR
+#define ADPCM_SAMPLE_RATE  (15625)
+#define ADPCM_BUFFER_LEN   (15625)
 
 typedef struct {
-//  int16_t play_mode;
+  FILE* fp;
+  int16_t use_high_memory;
   int16_t step_index;
   int16_t last_estimate;
   size_t num_samples;
   int16_t current_buffer_id;
   size_t buffer_len;
   size_t buffer_ofs;
-  uint8_t* buffers[ ADPCM_BUFFER_COUNT ];
-//  struct CHAIN2 chain_tables[ ADPCM_BUFFER_COUNT ];
-} ADPCM_HANDLE;
+  uint8_t* buffer;
+} ADPCM_WRITE_HANDLE;
 
-int32_t adpcm_init(ADPCM_HANDLE* adpcm, int16_t play_mode);
-void adpcm_close(ADPCM_HANDLE* adpcm);
-int32_t adpcm_encode(ADPCM_HANDLE* adpcm, void* pcm_buffer, size_t pcm_buffer_len, int16_t pcm_bit_depth, int16_t pcm_channels);
-int32_t adpcm_write_buffer(ADPCM_HANDLE* adpcm, FILE* fp, uint8_t* buffer, size_t len);
-int32_t adpcm_write(ADPCM_HANDLE* adpcm, FILE* fp);
-//void adpcm_play(ADPCM_HANDLE* adpcm);
-//void adpcm_stop(ADPCM_HANDLE* adpcm);
+int32_t adpcm_init(ADPCM_WRITE_HANDLE* adpcm, FILE* fp, int16_t use_high_memory);
+int32_t adpcm_flush(ADPCM_WRITE_HANDLE* adpcm);
+void adpcm_close(ADPCM_WRITE_HANDLE* adpcm);
+int32_t adpcm_write(ADPCM_WRITE_HANDLE* adpcm, int16_t* pcm_buffer, size_t pcm_len, int16_t pcm_channels);
 
 #endif

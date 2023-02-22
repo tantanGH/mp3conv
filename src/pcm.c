@@ -1,49 +1,80 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
+#include "himem.h"
 #include "pcm.h"
-#include "memory.h"
 
 //
-//  initialize pcm handle
+//  initialize pcm write handle
 //
-int32_t pcm_init(PCM_HANDLE* pcm, int16_t use_high_memory) {
+int32_t pcm_init(PCM_WRITE_HANDLE* pcm, FILE* fp, int16_t use_high_memory) {
+
+  pcm->fp = fp;
   pcm->use_high_memory = use_high_memory;
+
   pcm->num_samples = 0;
+
   pcm->buffer_len = PCM_BUFFER_LEN;
   pcm->buffer_ofs = 0;
-  pcm->buffer = malloc_himem(pcm->buffer_len, pcm->use_high_memory);
+  pcm->buffer = himem_malloc(pcm->buffer_len * sizeof(int16_t), pcm->use_high_memory);
+
   return (pcm->buffer != NULL) ? 0 : -1;
 }
 
 //
-//  close pcm handle
+//  flush buffer data to disk
 //
-void pcm_close(PCM_HANDLE* pcm) {
+int32_t pcm_flush(PCM_WRITE_HANDLE* pcm) {
+  int32_t rc = 0;
+  if (pcm->fp != NULL && pcm->buffer_ofs > 0) {
+    size_t write_len = pcm->buffer_ofs;
+    size_t written_len = 0;
+    do {
+      size_t len = fwrite(&(pcm->buffer[ written_len ]), sizeof(int16_t), write_len - written_len, pcm->fp);
+      if (len == 0) break;
+      written_len += len;
+    } while (written_len < write_len);
+    if (write_len < written_len) rc = -1;     // disk full?
+    pcm->buffer_ofs = 0;
+  }
+  return rc;
+}
+
+//
+//  close pcm write handle
+//
+void pcm_close(PCM_WRITE_HANDLE* pcm) {
+  if (pcm->buffer_ofs > 0) {
+    pcm_flush(pcm);
+  }
   if (pcm->buffer != NULL) {
-    free_himem(pcm->buffer, pcm->use_high_memory);
+    himem_free(pcm->buffer, pcm->use_high_memory);
     pcm->buffer = NULL;
   }
 }
 
 //
-//  write pcm data to file
+//  add pcm samples, if buffer is full, write to disk
 //
-int32_t pcm_write(PCM_HANDLE* pcm, FILE* fp) {
+int32_t pcm_write(PCM_WRITE_HANDLE* pcm, int16_t* pcm_samples, size_t len) {
 
-  // default return code
   int32_t rc = -1;
 
-  if (fp == NULL) {
-    printf("error: no available output file handle.\n");
-    goto exit;
+  // if buffer is full, flush data to disk
+  if ((pcm->buffer_ofs + len) > pcm->buffer_len) {
+    if (pcm_flush(pcm) != 0) {
+      goto exit;
+    }
   }
 
-  size_t written = 0;
-  do {
-    written += fwrite(pcm->buffer + written, 1, pcm->buffer_ofs - written, fp);
-  } while (written < pcm->buffer_ofs);
-  pcm->buffer_ofs = 0;
+  // write data as much as possible
+  size_t write_len = ((pcm->buffer_ofs + len) <= pcm->buffer_len) ? len : pcm->buffer_len - pcm->buffer_ofs;
+  if (write_len > 0) {
+    memcpy((void*)&(pcm->buffer[ pcm->buffer_ofs ]), (void*)pcm_samples, write_len * sizeof(int16_t));
+    pcm->buffer_ofs += write_len;
+    pcm->num_samples += write_len;
+  }
 
   rc = 0;
 
