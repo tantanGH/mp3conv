@@ -14,7 +14,6 @@ typedef struct {
   int16_t step_index;
   int16_t last_estimate;
   size_t num_samples;
-  int16_t current_buffer_id;
   size_t buffer_len;
   size_t buffer_ofs;
   uint8_t* buffer;

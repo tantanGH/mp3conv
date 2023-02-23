@@ -31,13 +31,14 @@ typedef struct {
 
   PCM_WRITE_HANDLE* pcm;
   ADPCM_WRITE_HANDLE* adpcm;
+  NAS_ADPCM_WRITE_HANDLE* nas;
 
   size_t buffer_len;
   int16_t* buffer;
 
 } MP3_DECODE_HANDLE;
 
-int32_t mp3_init(MP3_DECODE_HANDLE* decode, PCM_WRITE_HANDLE* pcm, ADPCM_WRITE_HANDLE* adpcm, int16_t use_high_memory);
+int32_t mp3_init(MP3_DECODE_HANDLE* decode, PCM_WRITE_HANDLE* pcm, ADPCM_WRITE_HANDLE* adpcm, NAS_ADPCM_WRITE_HANDLE* nas, int16_t use_high_memory);
 void mp3_close(MP3_DECODE_HANDLE* decode);
 int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data_len);
 

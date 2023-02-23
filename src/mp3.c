@@ -7,17 +7,19 @@
 #include "himem.h"
 #include "pcm.h"
 #include "adpcm.h"
+#include "nas_adpcm.h"
 #include "mp3.h"
 
 //
 //  init mp3 decoder handle
 //
-int32_t mp3_init(MP3_DECODE_HANDLE* decode, PCM_WRITE_HANDLE* pcm, ADPCM_WRITE_HANDLE* adpcm, int16_t use_high_memory) {
+int32_t mp3_init(MP3_DECODE_HANDLE* decode, PCM_WRITE_HANDLE* pcm, ADPCM_WRITE_HANDLE* adpcm, NAS_ADPCM_WRITE_HANDLE* nas, int16_t use_high_memory) {
 
   decode->use_high_memory = use_high_memory;
 
   decode->pcm = pcm;
   decode->adpcm = adpcm;
+  decode->nas = nas;
 
   decode->mp3_sample_rate = -1;
   decode->mp3_channels = -1;
@@ -168,6 +170,24 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
 
         }
 
+      } else if (decode->nas != NULL) {
+
+        for (int32_t i = 0; i < mad_pcm->length; i++) {
+
+          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[0][i]);
+          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[1][i]);
+
+          if (buffer_ofs >= decode->buffer_len) {
+            if (nas_adpcm_write(decode->nas, decode->buffer, buffer_ofs, mad_pcm->channels) != 0) {
+              goto exit;
+            }
+            decoded_len += buffer_ofs;
+            buffer_ofs = 0;
+            printf("\rconverting to NAS ADPCM... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
+          }
+
+        }
+
       }
 
     } else {
@@ -213,6 +233,23 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
 
         }
 
+      } else if (decode->nas != NULL) {
+
+        for (int32_t i = 0; i < mad_pcm->length; i++) {
+
+          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[0][i]);
+
+          if (buffer_ofs >= decode->buffer_len) {
+            if (nas_adpcm_write(decode->nas, decode->buffer, buffer_ofs, mad_pcm->channels) != 0) {
+              goto exit;
+            }
+            decoded_len += buffer_ofs;
+            buffer_ofs = 0;
+            printf("\rconverting to NAS ADPCM... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
+          }
+
+        }
+
       }
 
     }
@@ -235,6 +272,13 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
       decoded_len += buffer_ofs;
       buffer_ofs = 0;
       pcm_flush(decode->pcm);
+    } else if (decode->nas != NULL) {
+      if (nas_adpcm_write(decode->nas, decode->buffer, buffer_ofs, decode->mp3_channels) != 0) {
+        goto exit;
+      }
+      decoded_len += buffer_ofs;
+      buffer_ofs = 0;
+      nas_adpcm_flush(decode->nas);
     }
   }
 
