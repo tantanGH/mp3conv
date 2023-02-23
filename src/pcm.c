@@ -63,13 +63,16 @@ int32_t pcm_write(PCM_WRITE_HANDLE* pcm, int16_t* pcm_samples, size_t len) {
 
   // if buffer is full, flush data to disk
   if ((pcm->buffer_ofs + len) > pcm->buffer_len) {
+//    printf("pcm->buffer_ofs=%d, len=%d\n",pcm->buffer_ofs,len);
     if (pcm_flush(pcm) != 0) {
       goto exit;
     }
+//    printf("pcm->buffer_ofs=%d, len=%d\n",pcm->buffer_ofs,len);
   }
 
   // write data as much as possible
   size_t write_len = ((pcm->buffer_ofs + len) <= pcm->buffer_len) ? len : pcm->buffer_len - pcm->buffer_ofs;
+//  printf("write_len=%d,len=%d\n",write_len,len);
   if (write_len > 0) {
     memcpy((void*)&(pcm->buffer[ pcm->buffer_ofs ]), (void*)pcm_samples, write_len * sizeof(int16_t));
     pcm->buffer_ofs += write_len;
