@@ -296,7 +296,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   // decode mp3
   rc = mp3_decode(&mp3, mp3_buffer, mp3_len);
 
-  // close output file
+  // close out file
   fclose(fp_out);
   fp_out = NULL;
 
