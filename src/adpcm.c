@@ -102,7 +102,6 @@ int32_t adpcm_init(ADPCM_WRITE_HANDLE* adpcm, FILE* fp, int16_t use_high_memory)
   adpcm->last_estimate = 0;
   adpcm->num_samples = 0;
 
-  adpcm->current_buffer_id = 0;
   adpcm->buffer_len = ADPCM_BUFFER_LEN;
   adpcm->buffer_ofs = 0;
   adpcm->buffer = himem_malloc(adpcm->buffer_len, adpcm->use_high_memory);

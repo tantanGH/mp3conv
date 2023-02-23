@@ -2,7 +2,11 @@
 
 MP3 to ADPCM/PCM converter for X680x0/Human68k
 
-MP3ファイルを X68K(MSM6258V) ADPCM形式ファイル または 16bit符号付き big endian raw PCM形式ファイル(`*.s44`等) に変換します。
+MP3ファイルを以下の形式のいずれかに変換します。
+
+- X68K(MSM6258V) ADPCM形式ファイル(.PCM)
+- 16bit符号付き big endian raw PCM形式ファイル(.S44等)
+- 16bit符号付き NAS ADPCM形式ファイル(.A44等)
 
 X680x0/Human68k 上で動作します。MP3ファイルは可変ビットレートのものにも対応しています。
 
@@ -32,25 +36,28 @@ MP3EXxxx.ZIP をダウンロードして展開し、MP3EX.X をパスの通っ�
     usage: mp3ex.x [options] <mp3-file>
     options:
       -a ... output in ADPCM format (default)
-      -p ... output in 16bit PCM format
+      -p ... output in 16bit raw PCM format
+      -n ... output in 16bit NAS ADPCM format
       -u ... use 060turbo/ts-6be16 high memory
       -h ... show help message
       -o <out-name> ... output filename (default:auto assign)
-
-`-o`オプションの出力ファイル名を省略した場合、元のMP3ファイル名の拡張子を出力形式に合わせて変更したものとなります。
-ファイルが既に存在する場合は確認を求められます。
-
-例：
-- ADPCM出力 ... (元のMP3主ファイル名).pcm
-- PCM出力でMP3が44.1kHzステレオの場合 ... (元のMP3主ファイル名).s44
 
 `-a` オプションで出力を X68k ADPCM (15.625kHz mono) 形式とします。デフォルトの出力形式です。自動的にモノラル変換とダウンサンプリングを行います。
 
 `-p` オプションで出力を16bit符号付きraw PCMデータとします。`-a` と同時に指定はできません。周波数およびステレオモノラルについては元のMP3に準じます。特に変換はされません。
 
+`-n` オプションで出力を16bit符号付きNAS ADPCMデータとします。`-a` `-p` と同時に指定はできません。周波数およびステレオモノラルについては元のMP3に準じます。
+
+`-o`オプションの出力ファイル名を指定します。これを省略した場合、元のMP3ファイル名の拡張子を出力形式に合わせて自動的に変更したものとなります。
+ファイルが既に存在する場合は確認を求められます。
+
+- ADPCM出力 ... (元のMP3主ファイル名).pcm
+- PCM出力でMP3が44.1kHzステレオの場合 ... (元のMP3主ファイル名).s44
+- NAS ADPCM出力でMP3が44.1kHzステレオの場合 ... (元のMP3主ファイル名).a44
+
 `-u` オプションを利用するとMP3読み込みバッファに060turbo.sys/TS-6BE16のハイメモリを使用します。ハイメモリドライバの事前の組み込みが必要です。
 
-出力された長時間 ADPCM/PCM 形式データの内蔵ADPCMまたはMercury-Unitでの再生には拙作 `MP3EXP.X` が使えます。
+出力された長時間 ADPCM/PCM/NAS-ADPCM 形式データの内蔵ADPCMまたはMercury-Unitでの再生には拙作 `MP3EXP.X` が使えます。
 
 [MP3EXP.X](https://github.com/tantanGH/mp3exp)
 
@@ -64,6 +71,8 @@ M.Kamadaさんの `s44play.x` を使うとMercury-Unit無しでもOPMによる�
 
 MP3デコードライブラリとして libmad 0.15.1b をx68k向けにコンパイルしたものを利用させて頂いており、ライセンスは libmad のもの (GPLv2) に準じます。
 
+NAS ADPCM形式は Otankonas氏が 1995年に提案された X680x0 向け 16bit 符号付き PCM向けの独自ADPCMエンコード・デコードアルゴリズムおよびその実装ライブラリです。氏のライブラリコードの一部を当方でデバッグしたものを利用させて頂いています。
+
 ---
 
 ### Special Thanks
@@ -72,11 +81,13 @@ MP3デコードライブラリとして libmad 0.15.1b をx68k向けにコンパ
 * HAS060.X on run68mac thanks to YuNKさん / M.Kamadaさん / GOROmanさん
 * HLK301.X on run68mac thanks to SALTさん / GOROmanさん
 * XEiJ & 060turbo.sys thanks to M.Kamadaさん
+* ADPCMLIB thanks to Otankonas さん
 
 ---
 
 ### History
 
+* 0.3.5 (2023/02/23) ... NAS ADPCM形式に対応した
 * 0.3.0 (2023/02/22) ... 全面的に書き直した
 * 0.2.0 (2023/02/17) ... document 更新とリファクタリング
 * 0.1.1 (2023/02/12) ... メモリ確保失敗時にバスエラーが出ることがあったのを修正

@@ -6,8 +6,9 @@
 #include <doslib.h>
 #include "keyboard.h"
 #include "himem.h"
-#include "adpcm.h"
 #include "pcm.h"
+#include "adpcm.h"
+#include "nas_adpcm.h"
 #include "mp3.h"
 #include "mp3ex.h"
 
@@ -18,7 +19,8 @@ static void show_help_message() {
   printf("usage: mp3ex.x [options] <mp3-file>\n");
   printf("options:\n");
   printf("   -a ... output in ADPCM format (default)\n");
-  printf("   -p ... output in 16bit PCM format\n");
+  printf("   -p ... output in 16bit raw PCM format\n");
+  printf("   -n ... output in 16bit NAS ADPCM format\n");
   printf("   -u ... use 060turbo/ts-6be16 high memory\n");
   printf("   -h ... show help message\n");
   printf("   -o <output-file> ... output file name (default:auto assign)\n");
@@ -29,8 +31,8 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   // default exit code
   int32_t rc = 1;
 
-  // output format (0:ADPCM, 1:PCM)
-  int16_t out_format = 0;
+  // output format (0:ADPCM, 1:PCM, 2:NAS ADPCM)
+  int16_t out_format = OUTPUT_FORMAT_ADPCM;
 
   // use high memory
   int16_t use_high_memory = 0;
@@ -65,6 +67,9 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   // pcm write handle
   PCM_WRITE_HANDLE pcm = { 0 };
 
+  // nas adpcm write handle
+  NAS_ADPCM_WRITE_HANDLE nas = { 0 };
+
   // show title and version
   printf("MP3EX.X - MP3 to ADPCM/PCM converter for X680x0 version " VERSION " by tantan\n");
 
@@ -77,9 +82,11 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   for (int16_t i = 1; i < argc; i++) {
     if (argv[i][0] == '-' && strlen(argv[i]) >= 2) {
       if (argv[i][1] == 'a') {
-        out_format = 0;
+        out_format = OUTPUT_FORMAT_ADPCM;
       } else if (argv[i][1] == 'p') {
-        out_format = 1;
+        out_format = OUTPUT_FORMAT_PCM;
+      } else if (argv[i][1] == 'n') {
+        out_format = OUTPUT_FORMAT_NAS_ADPCM;
       } else if (argv[i][1] == 'u') {
         if (!himem_isavailable()) {
           printf("error: high memory driver is not installed.\n");
@@ -222,7 +229,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     goto catch;
   }
 
-  if (out_format == 0) {
+  if (out_format == OUTPUT_FORMAT_ADPCM) {
 
     // init adpcm write handle
     if (adpcm_init(&adpcm, fp_out, use_high_memory) != 0) {
@@ -231,12 +238,12 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     }
 
     // init mp3 decoder handle
-    if (mp3_init(&mp3, NULL, &adpcm, use_high_memory) != 0) {
+    if (mp3_init(&mp3, NULL, &adpcm, NULL, use_high_memory) != 0) {
       printf("error: out of memory (mp3 decode handle init error).\n");
       goto catch;
     }
 
-  } else {
+  } else if (out_format == OUTPUT_FORMAT_PCM) {
 
     // init pcm write handle
     if (pcm_init(&pcm, fp_out, use_high_memory) != 0) {
@@ -245,7 +252,21 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     }
 
     // init mp3 decoder handle
-    if (mp3_init(&mp3, &pcm, NULL, use_high_memory) != 0) {
+    if (mp3_init(&mp3, &pcm, NULL, NULL, use_high_memory) != 0) {
+      printf("error: out of memory (mp3 decode handle init error).\n");
+      goto catch;
+    }
+
+  } else if (out_format == OUTPUT_FORMAT_NAS_ADPCM) {
+
+    // init nas adpcm write handle
+    if (nas_adpcm_init(&nas, fp_out, use_high_memory) != 0) {
+      printf("error: out of memory (nas adpcm write handle init error).\n");
+      goto catch;
+    }
+
+    // init mp3 decoder handle
+    if (mp3_init(&mp3, NULL, NULL, &nas, use_high_memory) != 0) {
       printf("error: out of memory (mp3 decode handle init error).\n");
       goto catch;
     }
@@ -259,17 +280,26 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     if (out_file_name[0] == '\0') {
       strcpy(out_file_name, out_staging_file_name);
       out_file_name[ strlen(out_staging_file_name) - 3 ] = '\0';
-      if (out_format == 0) {
+      if (out_format == OUTPUT_FORMAT_ADPCM) {
         if (mp3_file_name[ strlen(mp3_file_name) - 3 ] == 'm') {
           strcat(out_file_name, "pcm");
         } else {
           strcat(out_file_name, "PCM");
         }
-      } else {
+      } else if (out_format == OUTPUT_FORMAT_PCM) {
         if (mp3_file_name[ strlen(mp3_file_name) - 3 ] == 'm') {
           strcat(out_file_name, mp3.mp3_channels == 2 ? "s" : "m");
         } else {
           strcat(out_file_name, mp3.mp3_channels == 2 ? "S" : "M");
+        }
+        strcat(out_file_name, mp3.mp3_sample_rate == 32000 ? "32" :
+                              mp3.mp3_sample_rate == 44100 ? "44" :
+                              mp3.mp3_sample_rate == 48000 ? "48" : "xx");        
+      } else if (out_format == OUTPUT_FORMAT_NAS_ADPCM) {
+        if (mp3_file_name[ strlen(mp3_file_name) - 3 ] == 'm') {
+          strcat(out_file_name, mp3.mp3_channels == 2 ? "a" : "a");
+        } else {
+          strcat(out_file_name, mp3.mp3_channels == 2 ? "A" : "A");
         }
         strcat(out_file_name, mp3.mp3_sample_rate == 32000 ? "32" :
                               mp3.mp3_sample_rate == 44100 ? "44" :
@@ -294,7 +324,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
       printf("error: output file rename error.\n");
       goto catch;
     }
-    printf("\nOutput file name: %s\n", out_file_name);
+    printf("Output file name: %s\n", out_file_name);
     rc = 0;
   }
 
@@ -303,12 +333,15 @@ catch:
   // close mp3 decoder handle
   mp3_close(&mp3);
 
-  if (out_format == 0) {
+  if (out_format == OUTPUT_FORMAT_ADPCM) {
     // close adpcm write handle
     adpcm_close(&adpcm);
-  } else {
+  } else if (out_format == OUTPUT_FORMAT_PCM) {
     // close pcm write handle
     pcm_close(&pcm);
+  } else if (out_format == OUTPUT_FORMAT_NAS_ADPCM) {
+    // close nas adpcm write handle
+    nas_adpcm_close(&nas);
   }
 
   // reclaim mp3 staging buffer high memory

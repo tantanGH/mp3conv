@@ -16,7 +16,8 @@ CC = ${XDEV68K_DIR}/m68k-toolchain/bin/m68k-elf-gcc
 GAS2HAS = perl ${XDEV68K_DIR}/util/x68k_gas2has.pl -cpu 68000 -inc doscall.inc -inc iocscall.inc
 RUN68 = ${XDEV68K_DIR}/run68/run68
 HAS = $(RUN68) ${XDEV68K_DIR}/x68k_bin/HAS060.X
-HLK = $(RUN68) ${XDEV68K_DIR}/x68k_bin/hlk301.x
+#HLK = $(RUN68) ${XDEV68K_DIR}/x68k_bin/hlk301.x
+HLK = $(RUN68) ${XDEV68K_DIR}/x68k_bin/LK.X
 
 # 実行ファイル名
 TARGET_FILE = MP3EX.X
@@ -25,7 +26,7 @@ TARGET_FILE = MP3EX.X
 DOCUMENT_FILE = MP3EX.DOC
 
 # Distribution package 
-PACKAGE_FILE = ../MP3EX030.ZIP
+PACKAGE_FILE = ../MP3EX035.ZIP
 
 # ヘッダ検索パス
 INCLUDE_FLAGS = -I${XDEV68K_DIR}/include/xc -I${XDEV68K_DIR}/include/xdev68k -I${XDEV68K_DIR}/include/mad
@@ -36,13 +37,13 @@ CFLAGS = $(COMMON_FLAGS) -Wno-builtin-declaration-mismatch -fcall-used-d2 -fcall
     -fexec-charset=cp932 -fverbose-asm -fno-defer-pop
 
 # *.c ソースファイル
-C_SRCS = himem.c pcm.c adpcm.c mp3.c main.c
+C_SRCS = himem.c pcm.c adpcm.c nas_adpcm.c mp3.c main.c
 
 # *.s ソースファイル
-ASM_SRCS =
+ASM_SRCS = nas_adpcmlib.s
 
 # *.h source files
-HEADER_SRCS = keyboard.h himem.h pcm.h adpcm.h mp3.h mp3ex.h
+HEADER_SRCS = keyboard.h himem.h pcm.h adpcm.h nas_adpcm.h mp3.h mp3ex.h
 
 # リンク対象のライブラリファイル
 LIBS =\
@@ -86,7 +87,7 @@ ${INTERMEDIATE_DIR}/$(TARGET_FILE) : $(OBJS)
 		echo $(INTERMEDIATE_DIR)/`basename $$FILENAME` >> $(HLK_LINK_LIST); \
         done
 	$(HLK) -i $(HLK_LINK_LIST) -o ${INTERMEDIATE_DIR}/$(TARGET_FILE)
-	#rm -f tmp*.\$$\$$\$$
+	rm -f tmp*.\$$\$$\$$
 
 # *.c ソースのコンパイル
 $(INTERMEDIATE_DIR)/%.o : %.c Makefile $(HEADER_SRCS)
