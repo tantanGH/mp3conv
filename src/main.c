@@ -18,7 +18,7 @@ static void show_help_message() {
   printf("usage: mp3ex.x [options] <mp3-file>\n");
   printf("options:\n");
   printf("   -a ... output in ADPCM format (default)\n");
-  printf("   -p ... output in 16bit raw PCM format\n");
+  printf("   -p ... output in 16bit Raw PCM format\n");
   printf("   -n ... output in 16bit NAS ADPCM format\n");
   printf("   -u ... use 060turbo/ts-6be16 high memory\n");
   printf("   -h ... show help message\n");
@@ -322,9 +322,9 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
                               mp3.mp3_sample_rate == 48000 ? "48" : "xx");        
       } else if (out_format == OUTPUT_FORMAT_NAS_ADPCM) {
         if (mp3_file_name[ strlen(mp3_file_name) - 3 ] == 'm') {
-          strcat(out_file_name, mp3.mp3_channels == 2 ? "a" : "a");
+          strcat(out_file_name, mp3.mp3_channels == 2 ? "x" : "y");
         } else {
-          strcat(out_file_name, mp3.mp3_channels == 2 ? "A" : "A");
+          strcat(out_file_name, mp3.mp3_channels == 2 ? "X" : "Y");
         }
         strcat(out_file_name, mp3.mp3_sample_rate == 32000 ? "32" :
                               mp3.mp3_sample_rate == 44100 ? "44" :
