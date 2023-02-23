@@ -15,11 +15,11 @@
 //
 int32_t mp3_init(MP3_DECODE_HANDLE* decode, PCM_WRITE_HANDLE* pcm, ADPCM_WRITE_HANDLE* adpcm, NAS_ADPCM_WRITE_HANDLE* nas, int16_t use_high_memory) {
 
-  decode->use_high_memory = use_high_memory;
-
   decode->pcm = pcm;
   decode->adpcm = adpcm;
   decode->nas = nas;
+
+  decode->use_high_memory = use_high_memory;
 
   decode->mp3_sample_rate = -1;
   decode->mp3_channels = -1;
@@ -30,7 +30,7 @@ int32_t mp3_init(MP3_DECODE_HANDLE* decode, PCM_WRITE_HANDLE* pcm, ADPCM_WRITE_H
   memset(&(decode->mad_timer), 0, sizeof(MAD_TIMER));
 
   decode->buffer_len = MP3_DECODE_BUFFER_LEN;
-  decode->buffer = himem_malloc(decode->buffer_len, decode->use_high_memory);
+  decode->buffer = himem_malloc(decode->buffer_len * sizeof(int16_t), decode->use_high_memory);
 
   return (decode->buffer != NULL) ? 0 : -1;
 }

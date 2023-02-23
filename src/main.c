@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <stat.h>
 #include <iocslib.h>
 #include <doslib.h>
 #include "keyboard.h"
@@ -31,8 +30,8 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   // default exit code
   int32_t rc = 1;
 
-  // output format (0:ADPCM, 1:PCM, 2:NAS ADPCM)
-  int16_t out_format = OUTPUT_FORMAT_ADPCM;
+  // output format (-1:NONE, 0:ADPCM, 1:PCM, 2:NAS ADPCM)
+  int16_t out_format = OUTPUT_FORMAT_NONE;
 
   // use high memory
   int16_t use_high_memory = 0;
@@ -82,10 +81,22 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   for (int16_t i = 1; i < argc; i++) {
     if (argv[i][0] == '-' && strlen(argv[i]) >= 2) {
       if (argv[i][1] == 'a') {
+        if (out_format != OUTPUT_FORMAT_NONE) {
+          printf("error: you can select an output format only.\n");
+          goto exit;
+        }
         out_format = OUTPUT_FORMAT_ADPCM;
       } else if (argv[i][1] == 'p') {
+        if (out_format != OUTPUT_FORMAT_NONE) {
+          printf("error: you can select an output format only.\n");
+          goto exit;
+        }
         out_format = OUTPUT_FORMAT_PCM;
       } else if (argv[i][1] == 'n') {
+        if (out_format != OUTPUT_FORMAT_NONE) {
+          printf("error: you can select an output format only.\n");
+          goto exit;
+        }
         out_format = OUTPUT_FORMAT_NAS_ADPCM;
       } else if (argv[i][1] == 'u') {
         if (!himem_isavailable()) {
@@ -118,31 +129,14 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     printf("error: no mp3 file is specified.\n");
     goto exit;
   }
-
-  // output staging file name
-  strcpy(out_staging_file_name, mp3_file_name);
-  int16_t out_file_name_len = strlen(out_staging_file_name);
-  if (out_staging_file_name[out_file_name_len - 4] != '.') {
-    printf("error: incorrect mp3 file name.\n");
+  if (strlen(mp3_file_name) < 5 || stricmp(mp3_file_name + strlen(mp3_file_name) - 4, ".mp3") != 0) {
+    printf("error: not a mp3 file (%s).\n", mp3_file_name);
     goto exit;
   }
-  out_staging_file_name[ out_file_name_len - 3 ] = '%';
-  out_staging_file_name[ out_file_name_len - 2 ] = '%';
-  out_staging_file_name[ out_file_name_len - 1 ] = '%';
 
-  // output staging file overwrite check
-  struct stat stat_buf;
-  if (stat(out_staging_file_name, &stat_buf) == 0) {
-    printf("warning: output staging file (%s) already exists. overwrite? (y/n)", out_staging_file_name);
-    uint8_t c;
-    do {
-      c = INKEY();
-      if (c == 'n' || c == 'N') {
-        printf("\ncanceled.\n");
-        goto catch;
-      }
-    } while (c != 'y' && c != 'Y');
-    printf("\n");
+  // output format confirmation
+  if (out_format == OUTPUT_FORMAT_NONE) {
+    out_format = OUTPUT_FORMAT_ADPCM;
   }
 
   // open input MP3 file
@@ -157,7 +151,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   uint8_t mp3_header[10];
   size_t ret = fread(mp3_header, 1, 10, fp_mp3);
   if (ret != 10) {
-    printf("error: cannot read mp3 file.\n");
+    printf("error: cannot read mp3 file (%s).\n", mp3_file_name);
     goto catch;
   }
 
@@ -180,7 +174,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   printf("MP3 data size: %d [bytes]\n", mp3_len);
 
   // allocate mp3 read staging buffer on main memory
-  mp3_staging_buffer = himem_malloc(MP3_STAGING_BUFFER_BYTES, 0);
+  mp3_staging_buffer = himem_malloc(MP3_STAGING_BUFFER_BYTES, 0);     // must be main memory
   if (mp3_staging_buffer == NULL) {
     printf("error: out of memory (cannot allocate memory for mp3 staging read).\n");
     goto catch;
@@ -217,11 +211,37 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   fclose(fp_mp3);
   fp_mp3 = NULL;
 
-  himem_free(mp3_staging_buffer, 0);
+  himem_free(mp3_staging_buffer, 0);    // main memory
   mp3_staging_buffer = NULL;
 
   printf("\rloaded MP3 file into %s memory.\x1b[0K\n\n", use_high_memory ? "high" : "main");
   
+  // output staging file name
+  strcpy(out_staging_file_name, mp3_file_name);
+  int16_t out_file_name_len = strlen(out_staging_file_name);
+  if (out_staging_file_name[out_file_name_len - 4] != '.') {
+    printf("error: incorrect mp3 file name.\n");
+    goto exit;
+  }
+  out_staging_file_name[ out_file_name_len - 3 ] = '%';
+  out_staging_file_name[ out_file_name_len - 2 ] = '%';
+  out_staging_file_name[ out_file_name_len - 1 ] = '%';
+
+  // output staging file overwrite check
+  struct FILBUF filbuf;
+  if (FILES(&filbuf, out_staging_file_name, 0x20) >= 0) {
+    printf("warning: output staging file (%s) already exists. overwrite? (y/n)", out_staging_file_name);
+    uint8_t c;
+    do {
+      c = INKEY();
+      if (c == 'n' || c == 'N') {
+        printf("\ncanceled.\n");
+        goto catch;
+      }
+    } while (c != 'y' && c != 'Y');
+    printf("\n");
+  }
+
   // open output staging file
   fp_out = fopen(out_staging_file_name, "wb");
   if (fp_out == NULL) {
@@ -275,6 +295,11 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
 
   // decode mp3
   rc = mp3_decode(&mp3, mp3_buffer, mp3_len);
+
+  // close output file
+  fclose(fp_out);
+  fp_out = NULL;
+
   if (rc == 0) {
     // rename staging file to final output name
     if (out_file_name[0] == '\0') {
@@ -307,7 +332,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
       }
     }
     printf("\n");
-    if (stat(out_file_name, &stat_buf) == 0) {
+    if (FILES(&filbuf, out_file_name, 0x20) == 0) {
       printf("warning: output file (%s) already exists. overwrite? (y/n)", out_file_name);
       uint8_t c;
       do {
@@ -344,18 +369,6 @@ catch:
     nas_adpcm_close(&nas);
   }
 
-  // reclaim mp3 staging buffer high memory
-  if (mp3_staging_buffer != NULL) {
-    himem_free(mp3_staging_buffer, use_high_memory);
-    mp3_staging_buffer = NULL;
-  }
-
-  // reclaim mp3 buffer high memory
-  if (mp3_buffer != NULL) {
-    himem_free(mp3_buffer, use_high_memory);
-    mp3_buffer = NULL;
-  }
-
   // close mp3 file if still opened
   if (fp_mp3 != NULL) {
     fclose(fp_mp3);
@@ -366,6 +379,18 @@ catch:
   if (fp_out != NULL) {
     fclose(fp_out);
     fp_out = NULL;
+  }
+
+  // reclaim mp3 staging buffer
+  if (mp3_staging_buffer != NULL) {
+    himem_free(mp3_staging_buffer, 0);    // must be main memory
+    mp3_staging_buffer = NULL;
+  }
+
+  // reclaim mp3 buffer high memory
+  if (mp3_buffer != NULL) {
+    himem_free(mp3_buffer, use_high_memory);
+    mp3_buffer = NULL;
   }
 
 exit:
