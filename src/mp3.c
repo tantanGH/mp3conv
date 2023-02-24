@@ -147,7 +147,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
             }
             decoded_len += buffer_ofs;
             buffer_ofs = 0;
-            printf("\rconverting to ADPCM... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
+            printf("\rconverting to MSM6258V ADPCM... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
           }
 
         }
@@ -165,7 +165,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
             }
             decoded_len += buffer_ofs;
             buffer_ofs = 0;
-            printf("\rconverting to PCM... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
+            printf("\rconverting to Raw PCM... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
           }
 
         }
@@ -183,7 +183,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
             }
             decoded_len += buffer_ofs;
             buffer_ofs = 0;
-            printf("\rconverting to NAS ADPCM... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
+            printf("\rconverting to YM2608 ADPCM... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
           }
 
         }
@@ -211,7 +211,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
             }
             decoded_len += buffer_ofs;
             buffer_ofs = 0;
-            printf("\rconverting to ADPCM... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
+            printf("\rconverting to MSM6258V ADPCM... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
           }
 
         }
@@ -228,7 +228,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
             }
             decoded_len += buffer_ofs;
             buffer_ofs = 0;
-            printf("\rconverting to PCM... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
+            printf("\rconverting to Raw PCM... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
           }
 
         }
@@ -245,7 +245,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
             }
             decoded_len += buffer_ofs;
             buffer_ofs = 0;
-            printf("\rconverting to NAS ADPCM... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
+            printf("\rconverting to YM2608 ADPCM... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
           }
 
         }
