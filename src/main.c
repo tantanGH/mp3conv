@@ -109,6 +109,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
         goto exit;
       } else if (argv[i][1] == 'o' && i+1 < argc) {
         strcpy(out_file_name, argv[i+1]);
+        strcpy(out_staging_file_name, argv[i+1]);
         i++;
       } else {
         printf("error: unknown option (%s).\n",argv[i]);
@@ -217,10 +218,12 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   printf("\rloaded MP3 file into %s memory.\x1b[0K\n\n", use_high_memory ? "high" : "main");
   
   // output staging file name
-  strcpy(out_staging_file_name, mp3_file_name);
+  if (out_staging_file_name[0] == '\0') {
+    strcpy(out_staging_file_name, mp3_file_name);
+  }
   int16_t out_file_name_len = strlen(out_staging_file_name);
   if (out_staging_file_name[out_file_name_len - 4] != '.') {
-    printf("error: incorrect mp3 file name.\n");
+    printf("error: incorrect output file name.\n");
     goto exit;
   }
   out_staging_file_name[ out_file_name_len - 3 ] = '%';
@@ -252,7 +255,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   if (out_format == OUTPUT_FORMAT_ADPCM) {
 
     // init adpcm write handle
-    if (adpcm_init(&adpcm, fp_out, use_high_memory) != 0) {
+    if (adpcm_init(&adpcm, fp_out) != 0) {
       printf("error: out of memory (adpcm write handle init error).\n");
       goto catch;
     }
@@ -266,7 +269,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   } else if (out_format == OUTPUT_FORMAT_PCM) {
 
     // init pcm write handle
-    if (pcm_init(&pcm, fp_out, use_high_memory) != 0) {
+    if (pcm_init(&pcm, fp_out) != 0) {
       printf("error: out of memory (pcm write handle init error).\n");
       goto catch;
     }
@@ -280,7 +283,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   } else if (out_format == OUTPUT_FORMAT_NAS_ADPCM) {
 
     // init YM2608 adpcm write handle
-    if (nas_adpcm_init(&nas, fp_out, use_high_memory) != 0) {
+    if (nas_adpcm_init(&nas, fp_out) != 0) {
       printf("error: out of memory (YM2608 adpcm write handle init error).\n");
       goto catch;
     }

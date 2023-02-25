@@ -10,7 +10,6 @@
 
 typedef struct {
   FILE* fp;
-  int16_t use_high_memory;
   int16_t step_index;
   int16_t last_estimate;
   size_t num_samples;
@@ -19,7 +18,7 @@ typedef struct {
   uint8_t* buffer;
 } ADPCM_WRITE_HANDLE;
 
-int32_t adpcm_init(ADPCM_WRITE_HANDLE* adpcm, FILE* fp, int16_t use_high_memory);
+int32_t adpcm_init(ADPCM_WRITE_HANDLE* adpcm, FILE* fp);
 int32_t adpcm_flush(ADPCM_WRITE_HANDLE* adpcm);
 void adpcm_close(ADPCM_WRITE_HANDLE* adpcm);
 int32_t adpcm_write(ADPCM_WRITE_HANDLE* adpcm, int16_t* pcm_buffer, size_t pcm_len, int16_t pcm_channels);

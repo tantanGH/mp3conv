@@ -91,12 +91,11 @@ static uint8_t encode(int16_t current_data, int16_t last_estimate, int16_t* step
 //
 //  initialize adpcm write handle
 //
-int32_t adpcm_init(ADPCM_WRITE_HANDLE* adpcm, FILE* fp, int16_t use_high_memory) {
+int32_t adpcm_init(ADPCM_WRITE_HANDLE* adpcm, FILE* fp) {
 
   int32_t rc = -1;
 
   adpcm->fp = fp;
-  adpcm->use_high_memory = use_high_memory;
 
   adpcm->step_index = 0;
   adpcm->last_estimate = 0;
@@ -104,7 +103,7 @@ int32_t adpcm_init(ADPCM_WRITE_HANDLE* adpcm, FILE* fp, int16_t use_high_memory)
 
   adpcm->buffer_len = ADPCM_BUFFER_LEN;
   adpcm->buffer_ofs = 0;
-  adpcm->buffer = himem_malloc(adpcm->buffer_len, adpcm->use_high_memory);
+  adpcm->buffer = himem_malloc(adpcm->buffer_len, 0);
 
   return (adpcm->buffer != NULL) ? 0 : -1;
 }
@@ -136,7 +135,7 @@ void adpcm_close(ADPCM_WRITE_HANDLE* adpcm) {
     adpcm_flush(adpcm);
   }
   if (adpcm->buffer != NULL) {
-    himem_free(adpcm->buffer, adpcm->use_high_memory);
+    himem_free(adpcm->buffer, 0);
     adpcm->buffer = NULL;
   }
 }

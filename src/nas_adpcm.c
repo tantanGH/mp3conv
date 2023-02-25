@@ -7,18 +7,17 @@
 //
 //  initialize nas adpcm write handle
 //
-int32_t nas_adpcm_init(NAS_ADPCM_WRITE_HANDLE* nas, FILE* fp, int16_t use_high_memory) {
+int32_t nas_adpcm_init(NAS_ADPCM_WRITE_HANDLE* nas, FILE* fp) {
 
   int32_t rc = -1;
 
   nas->fp = fp;
-  nas->use_high_memory = use_high_memory;
   nas->num_samples = 0;
   nas->lib_initialized = 0;
 
   nas->buffer_len = NAS_ADPCM_BUFFER_LEN;
   nas->buffer_ofs = 0;
-  nas->buffer = himem_malloc(nas->buffer_len, nas->use_high_memory);
+  nas->buffer = himem_malloc(nas->buffer_len, 0);
   if (nas->buffer == NULL) goto exit;
 
   asm volatile (
@@ -61,7 +60,7 @@ void nas_adpcm_close(NAS_ADPCM_WRITE_HANDLE* nas) {
     nas_adpcm_flush(nas);
   }
   if (nas->buffer != NULL) {
-    himem_free(nas->buffer, nas->use_high_memory);
+    himem_free(nas->buffer, 0);
     nas->buffer = NULL;
   }
 }
