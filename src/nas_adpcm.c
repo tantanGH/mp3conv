@@ -7,18 +7,25 @@
 //
 //  initialize nas adpcm write handle
 //
-int32_t nas_adpcm_init(NAS_ADPCM_WRITE_HANDLE* nas, FILE* fp) {
+int32_t nas_adpcm_init(NAS_ADPCM_WRITE_HANDLE* nas, FILE* fp, int16_t use_high_memory) {
 
   int32_t rc = -1;
 
   nas->fp = fp;
+//  nas->use_high_memory = use_high_memory;
+  nas->use_high_memory = 0;
   nas->num_samples = 0;
   nas->lib_initialized = 0;
 
   nas->buffer_len = NAS_ADPCM_BUFFER_LEN;
   nas->buffer_ofs = 0;
-  nas->buffer = himem_malloc(nas->buffer_len, 0);
+  nas->buffer = himem_malloc(nas->buffer_len, nas->use_high_memory);
   if (nas->buffer == NULL) goto exit;
+
+  if (nas->use_high_memory) {
+    nas->fwrite_buffer = himem_malloc(NAS_ADPCM_FWRITE_BUFFER_LEN * sizeof(uint8_t), 0);
+    if (nas->fwrite_buffer == NULL) goto exit;
+  }
 
   asm volatile (
     "jbsr  ptoa_make_buffer\n"
@@ -41,12 +48,22 @@ int32_t nas_adpcm_flush(NAS_ADPCM_WRITE_HANDLE* nas) {
   if (nas->fp != NULL && nas->buffer_ofs > 0) {
     size_t write_len = nas->buffer_ofs;
     size_t written_len = 0;
-    do {
-      size_t len = fwrite(&(nas->buffer[ written_len ]), sizeof(uint8_t), write_len - written_len, nas->fp);
-      if (len == 0) break;
-      written_len += len;
-    } while (written_len < write_len);
-    if (write_len < written_len) rc = -1;     // disk full?
+    if (nas->use_high_memory) {
+      do {
+        size_t cpy_len = ( write_len - written_len ) > NAS_ADPCM_FWRITE_BUFFER_LEN ? NAS_ADPCM_FWRITE_BUFFER_LEN : write_len - written_len;
+        memcpy(nas->fwrite_buffer, &(nas->buffer[ written_len ]), cpy_len * sizeof(uint8_t));
+        size_t len = fwrite(nas->fwrite_buffer, sizeof(uint8_t), cpy_len, nas->fp); 
+        if (len == 0) break;
+        written_len += len;        
+      } while (written_len < write_len);
+    } else {
+      do {
+        size_t len = fwrite(&(nas->buffer[ written_len ]), sizeof(uint8_t), write_len - written_len, nas->fp);
+        if (len == 0) break;
+        written_len += len;
+      } while (written_len < write_len);    
+    }
+  if (write_len > written_len) rc = -1;     // disk full?
     nas->buffer_ofs = 0;
   }
   return rc;
@@ -60,8 +77,12 @@ void nas_adpcm_close(NAS_ADPCM_WRITE_HANDLE* nas) {
     nas_adpcm_flush(nas);
   }
   if (nas->buffer != NULL) {
-    himem_free(nas->buffer, 0);
+    himem_free(nas->buffer, nas->use_high_memory);
     nas->buffer = NULL;
+  }
+  if (nas->fwrite_buffer != NULL) {
+    himem_free(nas->fwrite_buffer, 0);
+    nas->fwrite_buffer = NULL;
   }
 }
 

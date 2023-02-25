@@ -18,7 +18,7 @@ static void show_help_message() {
   printf("usage: mp3ex.x [options] <mp3-file>\n");
   printf("options:\n");
   printf("   -a ... output in MSM6258V ADPCM format (default)\n");
-  printf("   -p ... output in 16bit Raw PCM format\n");
+  printf("   -p ... output in 16bit raw PCM (big endian) format\n");
   printf("   -n ... output in 16bit YM2608 ADPCM format\n");
   printf("   -u ... use 060turbo/TS-6BE16 high memory\n");
   printf("   -h ... show help message\n");
@@ -255,7 +255,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   if (out_format == OUTPUT_FORMAT_ADPCM) {
 
     // init adpcm write handle
-    if (adpcm_init(&adpcm, fp_out) != 0) {
+    if (adpcm_init(&adpcm, fp_out, use_high_memory) != 0) {
       printf("error: out of memory (adpcm write handle init error).\n");
       goto catch;
     }
@@ -269,7 +269,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   } else if (out_format == OUTPUT_FORMAT_PCM) {
 
     // init pcm write handle
-    if (pcm_init(&pcm, fp_out) != 0) {
+    if (pcm_init(&pcm, fp_out, use_high_memory) != 0) {
       printf("error: out of memory (pcm write handle init error).\n");
       goto catch;
     }
@@ -283,7 +283,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   } else if (out_format == OUTPUT_FORMAT_NAS_ADPCM) {
 
     // init YM2608 adpcm write handle
-    if (nas_adpcm_init(&nas, fp_out) != 0) {
+    if (nas_adpcm_init(&nas, fp_out, use_high_memory) != 0) {
       printf("error: out of memory (YM2608 adpcm write handle init error).\n");
       goto catch;
     }

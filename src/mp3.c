@@ -165,7 +165,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
             }
             decoded_len += buffer_ofs;
             buffer_ofs = 0;
-            printf("\rconverting to Raw PCM... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
+            printf("\rconverting to 16bit raw PCM (big)... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
           }
 
         }
@@ -228,7 +228,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
             }
             decoded_len += buffer_ofs;
             buffer_ofs = 0;
-            printf("\rconverting to Raw PCM... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
+            printf("\rconverting to 16bit raw PCM (big)... (%d samples in %4.2f sec) [ESC] to cancel", decoded_len, (ONTIME() - t0) / 100.0);
           }
 
         }
