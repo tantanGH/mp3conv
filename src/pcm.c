@@ -8,16 +8,14 @@
 //
 //  initialize pcm write handle
 //
-int32_t pcm_init(PCM_WRITE_HANDLE* pcm, FILE* fp, int16_t use_high_memory) {
+int32_t pcm_init(PCM_WRITE_HANDLE* pcm, FILE* fp) {
 
   pcm->fp = fp;
-  pcm->use_high_memory = use_high_memory;
-
   pcm->num_samples = 0;
 
   pcm->buffer_len = PCM_BUFFER_LEN;
   pcm->buffer_ofs = 0;
-  pcm->buffer = himem_malloc(pcm->buffer_len * sizeof(int16_t), pcm->use_high_memory);
+  pcm->buffer = himem_malloc(pcm->buffer_len * sizeof(int16_t), 0);
 
   return (pcm->buffer != NULL) ? 0 : -1;
 }
@@ -49,7 +47,7 @@ void pcm_close(PCM_WRITE_HANDLE* pcm) {
     pcm_flush(pcm);
   }
   if (pcm->buffer != NULL) {
-    himem_free(pcm->buffer, pcm->use_high_memory);
+    himem_free(pcm->buffer, 0);
     pcm->buffer = NULL;
   }
 }
