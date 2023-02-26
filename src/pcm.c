@@ -13,8 +13,7 @@ int32_t pcm_init(PCM_WRITE_HANDLE* pcm, FILE* fp, int16_t use_high_memory) {
   int32_t rc = -1;
 
   pcm->fp = fp;
-//  pcm->use_high_memory = use_high_memory;
-  pcm->use_high_memory = 0;
+  pcm->use_high_memory = use_high_memory;
   pcm->num_samples = 0;
 
   pcm->buffer_len = PCM_BUFFER_LEN;

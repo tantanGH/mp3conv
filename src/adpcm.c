@@ -97,8 +97,7 @@ int32_t adpcm_init(ADPCM_WRITE_HANDLE* adpcm, FILE* fp, int16_t use_high_memory)
   int32_t rc = -1;
 
   adpcm->fp = fp;
-//  adpcm->use_high_memory = use_high_memory;
-  adpcm->use_high_memory = 0;
+  adpcm->use_high_memory = use_high_memory;
 
   adpcm->step_index = 0;
   adpcm->last_estimate = 0;

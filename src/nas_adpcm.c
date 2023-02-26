@@ -12,8 +12,7 @@ int32_t nas_adpcm_init(NAS_ADPCM_WRITE_HANDLE* nas, FILE* fp, int16_t use_high_m
   int32_t rc = -1;
 
   nas->fp = fp;
-//  nas->use_high_memory = use_high_memory;
-  nas->use_high_memory = 0;
+  nas->use_high_memory = use_high_memory;
   nas->num_samples = 0;
   nas->lib_initialized = 0;
 

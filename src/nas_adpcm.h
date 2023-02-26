@@ -5,8 +5,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define NAS_ADPCM_BUFFER_LEN (48000*2)
-#define NAS_ADPCM_FWRITE_BUFFER_LEN (65536)
+#define NAS_ADPCM_BUFFER_LEN (48000*4)
+#define NAS_ADPCM_FWRITE_BUFFER_LEN (48000*4)
 
 typedef struct {
   FILE* fp;

@@ -5,9 +5,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define PCM_BUFFER_LEN (48000*2)
-
-#define PCM_FWRITE_BUFFER_LEN (65536)
+#define PCM_BUFFER_LEN (48000*4)
+#define PCM_FWRITE_BUFFER_LEN (48000*4)
 
 typedef struct {
   FILE* fp;

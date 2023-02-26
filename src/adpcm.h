@@ -6,9 +6,8 @@
 #include <stddef.h>
 
 #define ADPCM_SAMPLE_RATE  (15625)
-#define ADPCM_BUFFER_LEN   (15625)
-
-#define ADPCM_FWRITE_BUFFER_LEN (65536)
+#define ADPCM_BUFFER_LEN   (15625*8)
+#define ADPCM_FWRITE_BUFFER_LEN (15625*8)
 
 typedef struct {
   FILE* fp;
