@@ -143,6 +143,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
 
           if (buffer_ofs >= decode->buffer_len) {
             if (adpcm_write(decode->adpcm, decode->buffer, buffer_ofs, mad_pcm->channels) != 0) {
+              printf("\nerror: output file write error (disk full?)\n");
               goto exit;
             }
             decoded_len += buffer_ofs;
@@ -161,6 +162,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
 
           if (buffer_ofs >= decode->buffer_len) {
             if (pcm_write(decode->pcm, decode->buffer, buffer_ofs) != 0) {
+              printf("\nerror: output file write error (disk full?)\n");
               goto exit;
             }
             decoded_len += buffer_ofs;
@@ -179,6 +181,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
 
           if (buffer_ofs >= decode->buffer_len) {
             if (nas_adpcm_write(decode->nas, decode->buffer, buffer_ofs, mad_pcm->channels) != 0) {
+              printf("\nerror: output file write error (disk full?)\n");
               goto exit;
             }
             decoded_len += buffer_ofs;
@@ -207,6 +210,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
 
           if (buffer_ofs >= decode->buffer_len) {
             if (adpcm_write(decode->adpcm, decode->buffer, buffer_ofs, mad_pcm->channels) != 0) {
+              printf("\nerror: output file write error (disk full?)\n");
               goto exit;
             }
             decoded_len += buffer_ofs;
@@ -224,6 +228,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
 
           if (buffer_ofs >= decode->buffer_len) {
             if (pcm_write(decode->pcm, decode->buffer, buffer_ofs) != 0) {
+              printf("\nerror: output file write error (disk full?)\n");
               goto exit;
             }
             decoded_len += buffer_ofs;
@@ -241,6 +246,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
 
           if (buffer_ofs >= decode->buffer_len) {
             if (nas_adpcm_write(decode->nas, decode->buffer, buffer_ofs, mad_pcm->channels) != 0) {
+              printf("\nerror: output file write error (disk full?)\n");
               goto exit;
             }
             decoded_len += buffer_ofs;
@@ -260,6 +266,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
   if (buffer_ofs > 0) {
     if (decode->adpcm != NULL) {
       if (adpcm_write(decode->adpcm, decode->buffer, buffer_ofs, decode->mp3_channels) != 0) {
+        printf("\nerror: output file write error (disk full?)\n");
         goto exit;
       }
       decoded_len += buffer_ofs;
@@ -267,6 +274,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
       adpcm_flush(decode->adpcm);
     } else if (decode->pcm != NULL) {
       if (pcm_write(decode->pcm, decode->buffer, buffer_ofs) != 0) {
+        printf("\nerror: output file write error (disk full?)\n");
         goto exit;
       }
       decoded_len += buffer_ofs;
@@ -274,6 +282,7 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
       pcm_flush(decode->pcm);
     } else if (decode->nas != NULL) {
       if (nas_adpcm_write(decode->nas, decode->buffer, buffer_ofs, decode->mp3_channels) != 0) {
+        printf("\nerror: output file write error (disk full?)\n");
         goto exit;
       }
       decoded_len += buffer_ofs;
@@ -287,5 +296,6 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
   rc = 0;
 
 exit:
+
   return rc;
 }
