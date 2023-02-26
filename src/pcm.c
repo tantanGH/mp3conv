@@ -8,16 +8,28 @@
 //
 //  initialize pcm write handle
 //
-int32_t pcm_init(PCM_WRITE_HANDLE* pcm, FILE* fp) {
+int32_t pcm_init(PCM_WRITE_HANDLE* pcm, FILE* fp, int16_t use_high_memory) {
+
+  int32_t rc = -1;
 
   pcm->fp = fp;
+  pcm->use_high_memory = use_high_memory;
   pcm->num_samples = 0;
 
   pcm->buffer_len = PCM_BUFFER_LEN;
   pcm->buffer_ofs = 0;
-  pcm->buffer = himem_malloc(pcm->buffer_len * sizeof(int16_t), 0);
+  pcm->buffer = himem_malloc(pcm->buffer_len * sizeof(int16_t), pcm->use_high_memory);
+  if (pcm->buffer == NULL) goto exit;
 
-  return (pcm->buffer != NULL) ? 0 : -1;
+  if (pcm->use_high_memory) {
+    pcm->fwrite_buffer = himem_malloc(PCM_FWRITE_BUFFER_LEN * sizeof(int16_t), 0);
+    if (pcm->fwrite_buffer == NULL) goto exit;
+  }
+
+  rc = 0;
+
+exit: 
+  return rc;
 }
 
 //
@@ -28,12 +40,22 @@ int32_t pcm_flush(PCM_WRITE_HANDLE* pcm) {
   if (pcm->fp != NULL && pcm->buffer_ofs > 0) {
     size_t write_len = pcm->buffer_ofs;
     size_t written_len = 0;
-    do {
-      size_t len = fwrite(&(pcm->buffer[ written_len ]), sizeof(int16_t), write_len - written_len, pcm->fp);
-      if (len == 0) break;
-      written_len += len;
-    } while (written_len < write_len);
-    if (write_len < written_len) rc = -1;     // disk full?
+    if (pcm->use_high_memory) {
+      do {
+        size_t cpy_len = ( write_len - written_len ) > PCM_FWRITE_BUFFER_LEN ? PCM_FWRITE_BUFFER_LEN : write_len - written_len;
+        memcpy(pcm->fwrite_buffer, &(pcm->buffer[ written_len ]), cpy_len * sizeof(int16_t));
+        size_t len = fwrite(pcm->fwrite_buffer, sizeof(int16_t), cpy_len, pcm->fp); 
+        if (len == 0) break;
+        written_len += len;        
+      } while (written_len < write_len);
+    } else {
+      do {
+        size_t len = fwrite(&(pcm->buffer[ written_len ]), sizeof(int16_t), write_len - written_len, pcm->fp);
+        if (len == 0) break;
+        written_len += len;
+      } while (written_len < write_len);
+    }
+    if (write_len > written_len) rc = -1;     // disk full?
     pcm->buffer_ofs = 0;
   }
   return rc;
@@ -47,8 +69,12 @@ void pcm_close(PCM_WRITE_HANDLE* pcm) {
     pcm_flush(pcm);
   }
   if (pcm->buffer != NULL) {
-    himem_free(pcm->buffer, 0);
+    himem_free(pcm->buffer, pcm->use_high_memory);
     pcm->buffer = NULL;
+  }
+  if (pcm->fwrite_buffer != NULL) {
+    himem_free(pcm->fwrite_buffer, 0);
+    pcm->fwrite_buffer = NULL;
   }
 }
 

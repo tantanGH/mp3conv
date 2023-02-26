@@ -1,7 +1,7 @@
 #ifndef __H_MP3EX__
 #define __H_MP3EX__
 
-#define VERSION "0.4.7 (2023/02/25)"
+#define VERSION "0.4.8 (2023/02/26)"
 
 #define MAX_PATH_LEN (256)
 

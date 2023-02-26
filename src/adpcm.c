@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 #include "himem.h"
 #include "adpcm.h"
 
@@ -91,11 +92,12 @@ static uint8_t encode(int16_t current_data, int16_t last_estimate, int16_t* step
 //
 //  initialize adpcm write handle
 //
-int32_t adpcm_init(ADPCM_WRITE_HANDLE* adpcm, FILE* fp) {
+int32_t adpcm_init(ADPCM_WRITE_HANDLE* adpcm, FILE* fp, int16_t use_high_memory) {
 
   int32_t rc = -1;
 
   adpcm->fp = fp;
+  adpcm->use_high_memory = use_high_memory;
 
   adpcm->step_index = 0;
   adpcm->last_estimate = 0;
@@ -103,9 +105,18 @@ int32_t adpcm_init(ADPCM_WRITE_HANDLE* adpcm, FILE* fp) {
 
   adpcm->buffer_len = ADPCM_BUFFER_LEN;
   adpcm->buffer_ofs = 0;
-  adpcm->buffer = himem_malloc(adpcm->buffer_len, 0);
+  adpcm->buffer = himem_malloc(adpcm->buffer_len, adpcm->use_high_memory);
+  if (adpcm->buffer == NULL) goto exit;
+  
+  if (adpcm->use_high_memory) {
+    adpcm->fwrite_buffer = himem_malloc(ADPCM_FWRITE_BUFFER_LEN * sizeof(uint8_t), 0);
+    if (adpcm->fwrite_buffer == NULL) goto exit;
+  }
 
-  return (adpcm->buffer != NULL) ? 0 : -1;
+  rc = 0;
+
+exit:
+  return rc;
 }
 
 //
@@ -116,12 +127,22 @@ int32_t adpcm_flush(ADPCM_WRITE_HANDLE* adpcm) {
   if (adpcm->fp != NULL && adpcm->buffer_ofs > 0) {
     size_t write_len = adpcm->buffer_ofs;
     size_t written_len = 0;
-    do {
-      size_t len = fwrite(&(adpcm->buffer[ written_len ]), sizeof(uint8_t), write_len - written_len, adpcm->fp);
-      if (len == 0) break;
-      written_len += len;
-    } while (written_len < write_len);
-    if (write_len < written_len) rc = -1;     // disk full?
+    if (adpcm->use_high_memory) {
+      do {
+        size_t cpy_len = ( write_len - written_len ) > ADPCM_FWRITE_BUFFER_LEN ? ADPCM_FWRITE_BUFFER_LEN : write_len - written_len;
+        memcpy(adpcm->fwrite_buffer, &(adpcm->buffer[ written_len ]), cpy_len * sizeof(uint8_t));
+        size_t len = fwrite(adpcm->fwrite_buffer, sizeof(uint8_t), cpy_len, adpcm->fp); 
+        if (len == 0) break;
+        written_len += len;        
+      } while (written_len < write_len);
+    } else {
+      do {
+        size_t len = fwrite(&(adpcm->buffer[ written_len ]), sizeof(uint8_t), write_len - written_len, adpcm->fp);
+        if (len == 0) break;
+        written_len += len;
+      } while (written_len < write_len);
+    }
+    if (write_len > written_len) rc = -1;     // disk full?
     adpcm->buffer_ofs = 0;
   }
   return rc;
@@ -154,7 +175,7 @@ int32_t adpcm_write(ADPCM_WRITE_HANDLE* adpcm, int16_t* pcm_buffer, size_t pcm_l
     int16_t xx = 0;
     if (pcm_channels == 2) {
       // 16bit PCM LR to 12bit PCM mono
-      xx = (pcm_buffer[ pcm_ofs ] + pcm_buffer[ pcm_ofs + 1 ]) / 2 / 16;
+      xx = ((int32_t)(pcm_buffer[ pcm_ofs ]) + (int32_t)(pcm_buffer[ pcm_ofs + 1 ])) / 2 / 16;
       pcm_ofs += 2;
     } else {
       // 16bit PCM mono to 12bit PCM mono
