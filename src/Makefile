@@ -26,7 +26,7 @@ TARGET_FILE = MP3EX.X
 DOCUMENT_FILE = MP3EX.DOC
 
 # Distribution package 
-PACKAGE_FILE = ../MP3EX048.ZIP
+PACKAGE_FILE = ../MP3EX049.ZIP
 
 # ヘッダ検索パス
 INCLUDE_FLAGS = -I${XDEV68K_DIR}/include/xc -I${XDEV68K_DIR}/include/xdev68k -I${XDEV68K_DIR}/include/mad
