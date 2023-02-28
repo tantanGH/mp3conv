@@ -94,7 +94,7 @@ int32_t nas_adpcm_write(NAS_ADPCM_WRITE_HANDLE* nas, int16_t* pcm_data, size_t p
   uint32_t pcm_data_bytes = pcm_len * sizeof(int16_t);    // do not need to multiply channels (already included)
 
   if (!nas->lib_initialized) {
-    register uint32_t reg_d0 asm ("d0") = (uint32_t)(channels);
+    register uint32_t reg_d0 asm ("d0") = (uint32_t)(channels == 1 ? 0 : 1);
     asm volatile (
       "jbsr  ptoa_init\n"
       :                   // output operand
