@@ -5,21 +5,22 @@
 #include <doslib.h>
 #include "keyboard.h"
 #include "himem.h"
-#include "pcm.h"
-#include "adpcm.h"
-#include "nas_adpcm.h"
-#include "mp3.h"
-#include "mp3ex.h"
+#include "pcm_encode.h"
+#include "adpcm_encode.h"
+#include "ym2608_encode.h"
+#include "mp3_decode.h"
+#include "mp3conv.h"
 
 //
 //  show help messages
 //
 static void show_help_message() {
-  printf("usage: mp3ex.x [options] <mp3-file>\n");
+  printf("usage: mp3conv.x [options] <mp3-file>\n");
   printf("options:\n");
-  printf("   -a ... output in MSM6258V ADPCM format (default)\n");
-  printf("   -p ... output in 16bit raw PCM (big endian) format\n");
-  printf("   -n ... output in 16bit YM2608 ADPCM format\n");
+  printf("   -a ... output in 4bit MSM6258V ADPCM format (.pcm, default)\n");
+  printf("   -p ... output in 16bit big endian raw format (.sXX|.mXX) format\n");
+  printf("   -n ... output in 4bit YM2608 ADPCM (.aXX|.nXX) format\n");
+  printf("   -v<n> ... output volume (1-192, default:100)\n");
   printf("   -u ... use 060turbo/TS-6BE16 high memory\n");
   printf("   -h ... show help message\n");
   printf("   -o <output-file> ... output file name (default:auto assign)\n");
@@ -32,6 +33,9 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
 
   // output format (-1:NONE, 0:ADPCM, 1:PCM, 2:YM2608 ADPCM)
   int16_t out_format = OUTPUT_FORMAT_NONE;
+
+  // output volume
+  int16_t out_volume = 100;
 
   // use high memory
   int16_t use_high_memory = 0;
@@ -57,20 +61,20 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   // output file handle
   FILE* fp_out = NULL;
 
-  // decoder handle
+  // mp3 decode handle
   MP3_DECODE_HANDLE mp3 = { 0 };
 
-  // adpcm write handle
-  ADPCM_WRITE_HANDLE adpcm = { 0 };
+  // pcm encode handle
+  PCM_ENCODE_HANDLE pcm = { 0 };
 
-  // pcm write handle
-  PCM_WRITE_HANDLE pcm = { 0 };
+  // adpcm encode handle
+  ADPCM_ENCODE_HANDLE adpcm = { 0 };
 
-  // nas adpcm write handle
-  NAS_ADPCM_WRITE_HANDLE nas = { 0 };
+  // ym2608 adpcm encode handle
+  YM2608_ENCODE_HANDLE nas = { 0 };
 
   // show title and version
-  printf("MP3EX.X - MP3 to ADPCM/PCM converter for X680x0 version " VERSION " by tantan\n");
+  printf("MP3CONV.X - MP3 to ADPCM/PCM converter for X680x0 version " VERSION " by tantan\n");
 
   // argument options
   if (argc <= 1) {
@@ -97,7 +101,13 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
           printf("error: you can select an output format only.\n");
           goto exit;
         }
-        out_format = OUTPUT_FORMAT_NAS_ADPCM;
+        out_format = OUTPUT_FORMAT_YM2608;
+      } else if (argv[i][1] == 'v') {
+        out_volume = atoi(argv[i]+2);
+        if (out_volume < 1 || out_volume > 192) {
+          printf("error: volume range is 1 to 192.\n");
+          goto exit;
+        }
       } else if (argv[i][1] == 'u') {
         if (!himem_isavailable()) {
           printf("error: high memory driver is not installed.\n");
@@ -254,42 +264,42 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
 
   if (out_format == OUTPUT_FORMAT_ADPCM) {
 
-    // init adpcm write handle
-    if (adpcm_init(&adpcm, fp_out, use_high_memory) != 0) {
-      printf("error: out of memory (adpcm write handle init error).\n");
+    // init adpcm encode handle
+    if (adpcm_encode_init(&adpcm, fp_out, use_high_memory) != 0) {
+      printf("error: out of memory (adpcm encode handle init error).\n");
       goto catch;
     }
 
     // init mp3 decoder handle
-    if (mp3_init(&mp3, NULL, &adpcm, NULL, use_high_memory) != 0) {
+    if (mp3_init(&mp3, NULL, &adpcm, NULL, out_volume, use_high_memory) != 0) {
       printf("error: out of memory (mp3 decode handle init error).\n");
       goto catch;
     }
 
   } else if (out_format == OUTPUT_FORMAT_PCM) {
 
-    // init pcm write handle
-    if (pcm_init(&pcm, fp_out, use_high_memory) != 0) {
-      printf("error: out of memory (pcm write handle init error).\n");
+    // init pcm encode handle
+    if (pcm_encode_init(&pcm, fp_out, use_high_memory) != 0) {
+      printf("error: out of memory (pcm encode handle init error).\n");
       goto catch;
     }
 
     // init mp3 decoder handle
-    if (mp3_init(&mp3, &pcm, NULL, NULL, use_high_memory) != 0) {
+    if (mp3_init(&mp3, &pcm, NULL, NULL, out_volume, use_high_memory) != 0) {
       printf("error: out of memory (mp3 decode handle init error).\n");
       goto catch;
     }
 
-  } else if (out_format == OUTPUT_FORMAT_NAS_ADPCM) {
+  } else if (out_format == OUTPUT_FORMAT_YM2608) {
 
     // init YM2608 adpcm write handle
-    if (nas_adpcm_init(&nas, fp_out, use_high_memory) != 0) {
-      printf("error: out of memory (YM2608 adpcm write handle init error).\n");
+    if (ym2608_encode_init(&nas, fp_out, use_high_memory) != 0) {
+      printf("error: out of memory (YM2608 adpcm encode handle init error).\n");
       goto catch;
     }
 
     // init mp3 decoder handle
-    if (mp3_init(&mp3, NULL, NULL, &nas, use_high_memory) != 0) {
+    if (mp3_init(&mp3, NULL, NULL, &nas, out_volume, use_high_memory) != 0) {
       printf("error: out of memory (mp3 decode handle init error).\n");
       goto catch;
     }
@@ -323,7 +333,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
         strcat(out_file_name, mp3.mp3_sample_rate == 32000 ? "32" :
                               mp3.mp3_sample_rate == 44100 ? "44" :
                               mp3.mp3_sample_rate == 48000 ? "48" : "xx");        
-      } else if (out_format == OUTPUT_FORMAT_NAS_ADPCM) {
+      } else if (out_format == OUTPUT_FORMAT_YM2608) {
         if (mp3_file_name[ strlen(mp3_file_name) - 3 ] == 'm') {
           strcat(out_file_name, mp3.mp3_channels == 2 ? "a" : "n");
         } else {
@@ -362,14 +372,14 @@ catch:
   mp3_close(&mp3);
 
   if (out_format == OUTPUT_FORMAT_ADPCM) {
-    // close adpcm write handle
-    adpcm_close(&adpcm);
+    // close adpcm encode handle
+    adpcm_encode_close(&adpcm);
   } else if (out_format == OUTPUT_FORMAT_PCM) {
-    // close pcm write handle
-    pcm_close(&pcm);
-  } else if (out_format == OUTPUT_FORMAT_NAS_ADPCM) {
-    // close YM2608 adpcm write handle
-    nas_adpcm_close(&nas);
+    // close pcm encode handle
+    pcm_encode_close(&pcm);
+  } else if (out_format == OUTPUT_FORMAT_YM2608) {
+    // close ym2608 adpcm encode handle
+    ym2608_encode_close(&nas);
   }
 
   // close mp3 file if still opened

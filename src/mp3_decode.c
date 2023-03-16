@@ -5,20 +5,21 @@
 #include <iocslib.h>
 #include "keyboard.h"
 #include "himem.h"
-#include "pcm.h"
-#include "adpcm.h"
-#include "nas_adpcm.h"
-#include "mp3.h"
+#include "pcm_encode.h"
+#include "adpcm_encode.h"
+#include "ym2608_encode.h"
+#include "mp3_decode.h"
 
 //
 //  init mp3 decoder handle
 //
-int32_t mp3_init(MP3_DECODE_HANDLE* decode, PCM_WRITE_HANDLE* pcm, ADPCM_WRITE_HANDLE* adpcm, NAS_ADPCM_WRITE_HANDLE* nas, int16_t use_high_memory) {
+int32_t mp3_init(MP3_DECODE_HANDLE* decode, PCM_ENCODE_HANDLE* pcm, ADPCM_ENCODE_HANDLE* adpcm, YM2608_ENCODE_HANDLE* nas, int16_t out_volume, int16_t use_high_memory) {
 
   decode->pcm = pcm;
   decode->adpcm = adpcm;
   decode->nas = nas;
 
+  decode->out_volume = out_volume;
   decode->use_high_memory = use_high_memory;
 
   decode->mp3_sample_rate = -1;
@@ -129,20 +130,22 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
 
       if (decode->adpcm != NULL) {
 
+        int16_t v = decode->out_volume;
+
         for (int32_t i = 0; i < mad_pcm->length; i++) {
 
           // down sampling
-          resample_counter += ADPCM_SAMPLE_RATE;
+          resample_counter += ADPCM_ENCODE_SAMPLE_RATE;
           if (resample_counter < mad_pcm->samplerate) {
             continue;
           }
           resample_counter -= mad_pcm->samplerate;
 
-          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[0][i]);
-          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[1][i]);
+          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[0][i]) * v / 100;
+          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[1][i]) * v / 100;
 
           if (buffer_ofs >= decode->buffer_len) {
-            if (adpcm_write(decode->adpcm, decode->buffer, buffer_ofs, mad_pcm->channels) != 0) {
+            if (adpcm_encode_write(decode->adpcm, decode->buffer, buffer_ofs, mad_pcm->channels) != 0) {
               printf("\nerror: output file write error (disk full?)\n");
               goto exit;
             }
@@ -155,13 +158,15 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
 
       } else if (decode->pcm != NULL) {
 
+        int16_t v = decode->out_volume;
+
         for (int32_t i = 0; i < mad_pcm->length; i++) {
 
-          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[0][i]);
-          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[1][i]);
+          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[0][i]) * v / 100;
+          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[1][i]) * v / 100;
 
           if (buffer_ofs >= decode->buffer_len) {
-            if (pcm_write(decode->pcm, decode->buffer, buffer_ofs) != 0) {
+            if (pcm_encode_write(decode->pcm, decode->buffer, buffer_ofs) != 0) {
               printf("\nerror: output file write error (disk full?)\n");
               goto exit;
             }
@@ -174,13 +179,15 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
 
       } else if (decode->nas != NULL) {
 
+        int16_t v = decode->out_volume;
+
         for (int32_t i = 0; i < mad_pcm->length; i++) {
 
-          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[0][i]);
-          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[1][i]);
+          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[0][i]) * v / 100;
+          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[1][i]) * v / 100;
 
           if (buffer_ofs >= decode->buffer_len) {
-            if (nas_adpcm_write(decode->nas, decode->buffer, buffer_ofs, mad_pcm->channels) != 0) {
+            if (ym2608_encode_write(decode->nas, decode->buffer, buffer_ofs, mad_pcm->channels) != 0) {
               printf("\nerror: output file write error (disk full?)\n");
               goto exit;
             }
@@ -197,19 +204,21 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
 
       if (decode->adpcm != NULL) {
 
+        int16_t v = decode->out_volume;
+
         for (int32_t i = 0; i < mad_pcm->length; i++) {
 
           // down sampling
-          resample_counter += ADPCM_SAMPLE_RATE;
+          resample_counter += ADPCM_ENCODE_SAMPLE_RATE;
           if (resample_counter < mad_pcm->samplerate) {
             continue;
           }
           resample_counter -= mad_pcm->samplerate;
 
-          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[0][i]);
+          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[0][i]) * v / 100;
 
           if (buffer_ofs >= decode->buffer_len) {
-            if (adpcm_write(decode->adpcm, decode->buffer, buffer_ofs, mad_pcm->channels) != 0) {
+            if (adpcm_encode_write(decode->adpcm, decode->buffer, buffer_ofs, mad_pcm->channels) != 0) {
               printf("\nerror: output file write error (disk full?)\n");
               goto exit;
             }
@@ -222,12 +231,14 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
 
       } else if (decode->pcm != NULL) {
 
+        int16_t v = decode->out_volume;
+
         for (int32_t i = 0; i < mad_pcm->length; i++) {
 
-          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[0][i]);
+          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[0][i]) * v / 100;
 
           if (buffer_ofs >= decode->buffer_len) {
-            if (pcm_write(decode->pcm, decode->buffer, buffer_ofs) != 0) {
+            if (pcm_encode_write(decode->pcm, decode->buffer, buffer_ofs) != 0) {
               printf("\nerror: output file write error (disk full?)\n");
               goto exit;
             }
@@ -240,12 +251,14 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
 
       } else if (decode->nas != NULL) {
 
+        int16_t v = decode->out_volume;
+
         for (int32_t i = 0; i < mad_pcm->length; i++) {
 
-          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[0][i]);
+          decode->buffer[ buffer_ofs++ ] = scale_16bit(mad_pcm->samples[0][i]) * v / 100;
 
           if (buffer_ofs >= decode->buffer_len) {
-            if (nas_adpcm_write(decode->nas, decode->buffer, buffer_ofs, mad_pcm->channels) != 0) {
+            if (ym2608_encode_write(decode->nas, decode->buffer, buffer_ofs, mad_pcm->channels) != 0) {
               printf("\nerror: output file write error (disk full?)\n");
               goto exit;
             }
@@ -265,29 +278,29 @@ int32_t mp3_decode(MP3_DECODE_HANDLE* decode, uint8_t* mp3_data, size_t mp3_data
   // flush unwritten data
   if (buffer_ofs > 0) {
     if (decode->adpcm != NULL) {
-      if (adpcm_write(decode->adpcm, decode->buffer, buffer_ofs, decode->mp3_channels) != 0) {
+      if (adpcm_encode_write(decode->adpcm, decode->buffer, buffer_ofs, decode->mp3_channels) != 0) {
         printf("\nerror: output file write error (disk full?)\n");
         goto exit;
       }
       decoded_len += buffer_ofs;
       buffer_ofs = 0;
-      adpcm_flush(decode->adpcm);
+      adpcm_encode_flush(decode->adpcm);
     } else if (decode->pcm != NULL) {
-      if (pcm_write(decode->pcm, decode->buffer, buffer_ofs) != 0) {
+      if (pcm_encode_write(decode->pcm, decode->buffer, buffer_ofs) != 0) {
         printf("\nerror: output file write error (disk full?)\n");
         goto exit;
       }
       decoded_len += buffer_ofs;
       buffer_ofs = 0;
-      pcm_flush(decode->pcm);
+      pcm_encode_flush(decode->pcm);
     } else if (decode->nas != NULL) {
-      if (nas_adpcm_write(decode->nas, decode->buffer, buffer_ofs, decode->mp3_channels) != 0) {
+      if (ym2608_encode_write(decode->nas, decode->buffer, buffer_ofs, decode->mp3_channels) != 0) {
         printf("\nerror: output file write error (disk full?)\n");
         goto exit;
       }
       decoded_len += buffer_ofs;
       buffer_ofs = 0;
-      nas_adpcm_flush(decode->nas);
+      ym2608_encode_flush(decode->nas);
     }
   }
 

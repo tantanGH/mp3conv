@@ -2,12 +2,12 @@
 #include <stdint.h>
 #include <string.h>
 #include "himem.h"
-#include "nas_adpcm.h"
+#include "ym2608_encode.h"
 
 //
-//  initialize nas adpcm write handle
+//  initialize ym2608 adpcm encode handle
 //
-int32_t nas_adpcm_init(NAS_ADPCM_WRITE_HANDLE* nas, FILE* fp, int16_t use_high_memory) {
+int32_t ym2608_encode_init(YM2608_ENCODE_HANDLE* nas, FILE* fp, int16_t use_high_memory) {
 
   int32_t rc = -1;
 
@@ -16,13 +16,13 @@ int32_t nas_adpcm_init(NAS_ADPCM_WRITE_HANDLE* nas, FILE* fp, int16_t use_high_m
   nas->num_samples = 0;
   nas->lib_initialized = 0;
 
-  nas->buffer_len = NAS_ADPCM_BUFFER_LEN;
+  nas->buffer_len = YM2608_ENCODE_BUFFER_LEN;
   nas->buffer_ofs = 0;
   nas->buffer = himem_malloc(nas->buffer_len, nas->use_high_memory);
   if (nas->buffer == NULL) goto exit;
 
   if (nas->use_high_memory) {
-    nas->fwrite_buffer = himem_malloc(NAS_ADPCM_FWRITE_BUFFER_LEN * sizeof(uint8_t), 0);
+    nas->fwrite_buffer = himem_malloc(YM2608_ENCODE_FWRITE_BUFFER_LEN * sizeof(uint8_t), 0);
     if (nas->fwrite_buffer == NULL) goto exit;
   }
 
@@ -42,14 +42,14 @@ exit:
 //
 //  flush buffer data to disk
 //
-int32_t nas_adpcm_flush(NAS_ADPCM_WRITE_HANDLE* nas) {
+int32_t ym2608_encode_flush(YM2608_ENCODE_HANDLE* nas) {
   int32_t rc = 0;
   if (nas->fp != NULL && nas->buffer_ofs > 0) {
     size_t write_len = nas->buffer_ofs;
     size_t written_len = 0;
     if (nas->use_high_memory) {
       do {
-        size_t cpy_len = ( write_len - written_len ) > NAS_ADPCM_FWRITE_BUFFER_LEN ? NAS_ADPCM_FWRITE_BUFFER_LEN : write_len - written_len;
+        size_t cpy_len = ( write_len - written_len ) > YM2608_ENCODE_FWRITE_BUFFER_LEN ? YM2608_ENCODE_FWRITE_BUFFER_LEN : write_len - written_len;
         memcpy(nas->fwrite_buffer, &(nas->buffer[ written_len ]), cpy_len * sizeof(uint8_t));
         size_t len = fwrite(nas->fwrite_buffer, sizeof(uint8_t), cpy_len, nas->fp); 
         if (len == 0) break;
@@ -69,11 +69,11 @@ int32_t nas_adpcm_flush(NAS_ADPCM_WRITE_HANDLE* nas) {
 }
 
 //
-//  close nas adpcm write handle
+//  close ym2608 encode handle
 //
-void nas_adpcm_close(NAS_ADPCM_WRITE_HANDLE* nas) {
+void ym2608_encode_close(YM2608_ENCODE_HANDLE* nas) {
   if (nas->buffer_ofs > 0) {
-    nas_adpcm_flush(nas);
+    ym2608_encode_flush(nas);
   }
   if (nas->buffer != NULL) {
     himem_free(nas->buffer, nas->use_high_memory);
@@ -86,9 +86,9 @@ void nas_adpcm_close(NAS_ADPCM_WRITE_HANDLE* nas) {
 }
 
 //
-//  write nas adpcm data with encoding
+//  write ym2608 adpcm data with encoding
 //
-int32_t nas_adpcm_write(NAS_ADPCM_WRITE_HANDLE* nas, int16_t* pcm_data, size_t pcm_len, int16_t channels) {
+int32_t ym2608_encode_write(YM2608_ENCODE_HANDLE* nas, int16_t* pcm_data, size_t pcm_len, int16_t channels) {
 
   int32_t rc = -1;
   uint32_t pcm_data_bytes = pcm_len * sizeof(int16_t);    // do not need to multiply channels (already included)
@@ -105,7 +105,7 @@ int32_t nas_adpcm_write(NAS_ADPCM_WRITE_HANDLE* nas, int16_t* pcm_data, size_t p
   }
 
   if (nas->buffer_ofs + pcm_data_bytes > nas->buffer_len) {
-    if (nas_adpcm_flush(nas) != 0) {
+    if (ym2608_encode_flush(nas) != 0) {
       goto exit;
     }
   }
