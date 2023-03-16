@@ -1,7 +1,7 @@
 
 		include	iocscall.mac
 		include	doscall.mac
-		include	nas_macro.h
+		include	ym2608_adpcmlib.mac
 
 		.xdef	ptoa_make_buffer
 		.xdef	ptoa_init
@@ -592,4 +592,3 @@ table3:		dc.w	16,17,19,21,23,25,28,31,34,37,41,45,50,55,60,66,73,80,88,97,107
 		.quad
 
 		end
-    
