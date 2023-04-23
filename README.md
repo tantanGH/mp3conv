@@ -17,9 +17,9 @@ X680x0/Human68k 上で動作します。MP3ファイルは可変ビットレー�
 
 注意：MPUパワーを必要とするので、低クロックの000実機だとめちゃくちゃ時間がかかります。040turbo / 060turbo / PhantomX / エミュレータを推奨します。
 
-このプログラムはプレーヤーではありません。ADPCM/PCM/WAV/MP3の再生には
+このプログラムはプレーヤーではありません。ADPCM/PCM/WAVの再生には
 
-[MP3EXP.X](https://github.com/tantanGH/mp3exp)
+[S44EXP.X](https://github.com/tantanGH/s44exp)
 
 の方を利用ください。
 
