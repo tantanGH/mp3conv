@@ -38,8 +38,7 @@ MP3CVxxx.ZIP をダウンロードして展開し、MP3CONV.X をパスの通っ
       -a ... output in MSM6258V ADPCM format (default)
       -p ... output in 16bit Raw PCM format
       -n ... output in 16bit YM2608 ADPCM format
-      -v<n> ... volume (1-192), default:100)
-      -u ... use 060turbo/TS-6BE16 high memory
+      -v<n> ... volume (1-192), default:100
       -h ... show help message
       -o <out-name> ... output filename (default:auto assign)
 
@@ -58,28 +57,13 @@ MP3CVxxx.ZIP をダウンロードして展開し、MP3CONV.X をパスの通っ
 - PCM出力でMP3が44.1kHzステレオの場合 ... (元のMP3主ファイル名).s44
 - YM2608 ADPCM出力でMP3が44.1kHzステレオの場合 ... (元のMP3主ファイル名).a44
 
-`-u` オプションを利用するとMP3読み込みバッファに060turbo.sys/TS-6BE16のハイメモリを使用します。ハイメモリドライバの事前の組み込みが必要です。
+出力された長時間 MSM6258V-ADPCM/RawPCM/YM2608-ADPCM 形式データの内蔵ADPCMまたはMercury-Unitでの再生には拙作 `S44EXP.X` が使えます。
 
-出力された長時間 MSM6258V-ADPCM/RawPCM/YM2608-ADPCM 形式データの内蔵ADPCMまたはMercury-Unitでの再生には拙作 `MP3EXP.X` が使えます。
+[S44EXP.X](https://github.com/tantanGH/s44exp)
 
-[MP3EXP.X](https://github.com/tantanGH/mp3exp)
+M.Kamadaさんの `s44play.x` を使うとMercury-Unit無しでもOPMによるエミュレーションでステレオ16bitPCM形式データを再生可能です(要マシンパワー)。
 
-M.Kamadaさんの `s44play.x` を使うとMercury-Unit無しでもOPMによるエミュレーションでPCM形式データを再生可能です(要マシンパワー)。
-
-[S44PLAY.X / FMPPLAY.X](http://retropc.net/x68000/software/sound/stereopcm/s44play/)
-
----
-
-### 060turbo実機でのポイント
-
-このソフトウェアは 060loadhigh.x によるハイメモリ上での実行に対応しています。
-
-<img src='images/a44bench2.png'/>
-
-上のグラフからも分かるように、純粋なデータ処理の占める割合が高いので、ハイメモリがとても効果的です。
-060turbo実機の場合は060loadhighと組みわせて使うことをお勧めします。
-なお、060loadhighは060turbo.sysを拡張モード(-xm)で組み込んだ時のみ有効となります。
-拡張モードでない場合、060loadhighは-sオプションをつけない限りは警告なくメインメモリでプログラムを実行しますのでご注意ください。
+[S44PLAY.X](http://retropc.net/x68000/software/sound/stereopcm/s44play/)
 
 ---
 
@@ -91,18 +75,9 @@ YM2608 ADPCM形式のエンコードライブラリとして Otankonas氏のラ�
 
 ---
 
-### Special Thanks
-
-* xdev68k thanks to ファミべのよっしんさん
-* HAS060.X on run68mac thanks to YuNKさん / M.Kamadaさん / GOROmanさん
-* HLK301.X on run68mac thanks to SALTさん / GOROmanさん
-* XEiJ & 060turbo.sys thanks to M.Kamadaさん
-* ADPCMLIB thanks to Otankonas さん
-
----
-
 ### History
 
+* 0.7.0 (2024/03/09) ... ハイメモリが利用可能な場合は自動的に利用するようにした
 * 0.6.0 (2023/03/16) ... プログラム名称変更 -vオプション追加
 * 0.5.0 (2023/02/28) ... N44への書き出しが正しくできていなかったのを修正
 * 0.4.9 (2023/02/26) ... 書き出し失敗時のエラー表示改善

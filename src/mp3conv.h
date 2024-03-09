@@ -1,7 +1,7 @@
 #ifndef __H_MP3CONV__
 #define __H_MP3CONV__
 
-#define VERSION "0.6.0 (2023/03/16)"
+#define VERSION "0.7.0 (2024/03/09)"
 
 #define MAX_PATH_LEN (256)
 

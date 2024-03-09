@@ -21,7 +21,7 @@ static void show_help_message() {
   printf("   -p ... output in 16bit big endian raw format (.sXX|.mXX) format\n");
   printf("   -n ... output in 4bit YM2608 ADPCM (.aXX|.nXX) format\n");
   printf("   -v<n> ... output volume (1-192, default:100)\n");
-  printf("   -u ... use 060turbo/TS-6BE16 high memory\n");
+//  printf("   -u ... use 060turbo/TS-6BE16 high memory\n");
   printf("   -h ... show help message\n");
   printf("   -o <output-file> ... output file name (default:auto assign)\n");
 }
@@ -108,12 +108,12 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
           printf("error: volume range is 1 to 192.\n");
           goto exit;
         }
-      } else if (argv[i][1] == 'u') {
-        if (!himem_isavailable()) {
-          printf("error: high memory driver is not installed.\n");
-          goto exit;
-        }
-        use_high_memory = 1;
+//      } else if (argv[i][1] == 'u') {
+//        if (!himem_isavailable()) {
+//          printf("error: high memory driver is not installed.\n");
+//          goto exit;
+//        }
+//        use_high_memory = 1;
       } else if (argv[i][1] == 'h') {
         show_help_message();
         goto exit;
@@ -148,6 +148,11 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   // output format confirmation
   if (out_format == OUTPUT_FORMAT_NONE) {
     out_format = OUTPUT_FORMAT_ADPCM;
+  }
+
+  // high memory
+  if (himem_isavailable()) {
+    use_high_memory = 1;
   }
 
   // open input MP3 file
