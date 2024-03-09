@@ -16,8 +16,6 @@ CC=${XDEV68K_DIR}/m68k-toolchain/bin/m68k-elf-gcc
 GAS2HAS="${XDEV68K_DIR}/util/x68k_gas2has.pl -cpu 68000 -inc doscall.inc -inc iocscall.inc"
 RUN68=${XDEV68K_DIR}/run68/run68x
 HAS=${XDEV68K_DIR}/x68k_bin/HAS060.X
-#HLK=${XDEV68K_DIR}/x68k_bin/hlk301.x
-#HLK=${XDEV68K_DIR}/x68k_bin/LK.X
 HLK=${XDEV68K_DIR}/x68k_bin/hlk.r
 HLK_LINK_LIST=_lk_list.tmp
 
