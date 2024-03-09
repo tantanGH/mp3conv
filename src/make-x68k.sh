@@ -10,18 +10,19 @@ LIBMAD_DIR="${WORKING_DIR}/../libmad-0.15.1b"
 
 TARGET_FILE="MP3CONV.X"
 DOC_FILE="../MP3CONV.DOC"
-ZIP_FILE="../../MP3CV060.ZIP"
+ZIP_FILE="../../MP3CV070.ZIP"
 
 CC=${XDEV68K_DIR}/m68k-toolchain/bin/m68k-elf-gcc
 GAS2HAS="${XDEV68K_DIR}/util/x68k_gas2has.pl -cpu 68000 -inc doscall.inc -inc iocscall.inc"
-RUN68=${XDEV68K_DIR}/run68/run68
+RUN68=${XDEV68K_DIR}/run68/run68x
 HAS=${XDEV68K_DIR}/x68k_bin/HAS060.X
 #HLK=${XDEV68K_DIR}/x68k_bin/hlk301.x
-HLK=${XDEV68K_DIR}/x68k_bin/LK.X
+#HLK=${XDEV68K_DIR}/x68k_bin/LK.X
+HLK=${XDEV68K_DIR}/x68k_bin/hlk.r
 HLK_LINK_LIST=_lk_list.tmp
 
 INCLUDE_FLAGS="-I${XDEV68K_DIR}/include/xc -I${XDEV68K_DIR}/include/xdev68k -I${LIBMAD_DIR}"
-COMMON_FLAGS="-m68000 -Os ${INCLUDE_FLAGS} -z-stack=32768"
+COMMON_FLAGS="-m68000 -O3 ${INCLUDE_FLAGS} -z-stack=32768"
 CFLAGS="${COMMON_FLAGS} -Wno-builtin-declaration-mismatch -fcall-used-d2 -fcall-used-a2 \
     -fexec-charset=cp932 -fverbose-asm -fno-defer-pop -DFPM_DEFAULT -D_TIME_T_DECLARED -D_CLOCK_T_DECLARED -Dwint_t=int \
 		-DXDEV68K"
@@ -42,14 +43,14 @@ function do_compile() {
     fi
 	  perl ${GAS2HAS} -i _build/${c}.m68k-gas.s -o _build/${c}.s
 	  rm -f _build/${c}.m68k-gas.s
-	  ${XDEV68K_DIR}/run68/run68 ${HAS} -e -u -w0 ${INCLUDE_FLAGS} _build/${c}.s -o _build/${c}.o
+	  ${RUN68} ${HAS} -e -u -w0 ${INCLUDE_FLAGS} _build/${c}.s -o _build/${c}.o
     if [ ! -f _build/${c}.o ]; then
       return 1
     fi
   done
   for c in $3; do
     echo "assembling ${c}.s in ${1}"
-	  ${XDEV68K_DIR}/run68/run68 ${HAS} -e -u -w0 ${INCLUDE_FLAGS} ${c}.s -o _build/${c}.o
+	  ${RUN68} ${HAS} -e -u -w0 ${INCLUDE_FLAGS} ${c}.s -o _build/${c}.o
     if [ ! -f _build/${c}.o ]; then
       return 1
     fi
@@ -73,7 +74,7 @@ function build_mp3conv() {
 	for a in `ls *.o *.L *.a`; do
 		echo $a >> ${HLK_LINK_LIST}
   done
-  ${XDEV68K_DIR}/run68/run68 ${HLK} -i ${HLK_LINK_LIST} -o ${TARGET_FILE}
+  ${RUN68} ${HLK} -i ${HLK_LINK_LIST} -o ${TARGET_FILE}
   rm -f tmp*.\$$\$$\$$
   zip -jr ${ZIP_FILE} ${DOC_FILE} ${TARGET_FILE}
   cd ..

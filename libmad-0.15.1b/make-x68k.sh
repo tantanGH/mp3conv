@@ -7,14 +7,14 @@ fi
 
 CC=${XDEV68K_DIR}/m68k-toolchain/bin/m68k-elf-gcc
 GAS2HAS="${XDEV68K_DIR}/util/x68k_gas2has.pl -cpu 68000 -inc doscall.inc -inc iocscall.inc"
-RUN68=${XDEV68K_DIR}/run68/run68
+RUN68=${XDEV68K_DIR}/run68/run68x
 HAS=${XDEV68K_DIR}/x68k_bin/HAS060.X
 #HLK=${XDEV68K_DIR}/x68k_bin/hlk301.x
 #HLK=${XDEV68K_DIR}/x68k_bin/LK.X
 #HLK_LINK_LIST=_lk_list.tmp
 
 INCLUDE_FLAGS="-I${XDEV68K_DIR}/include/xc -I${XDEV68K_DIR}/include/xdev68k"
-COMMON_FLAGS="-m68000 -Os ${INCLUDE_FLAGS} -z-stack=32768"
+COMMON_FLAGS="-m68000 -O3 ${INCLUDE_FLAGS} -z-stack=32768"
 CFLAGS="${COMMON_FLAGS} -Wno-builtin-declaration-mismatch -fcall-used-d2 -fcall-used-a2 \
     -fexec-charset=cp932 -fverbose-asm -fno-defer-pop -DFPM_DEFAULT -D_TIME_T_DECLARED -D_CLOCK_T_DECLARED -Dwint_t=int \
 		-DXDEV68K -DFPM_DEFAULT -DOPT_SPEED"
@@ -34,7 +34,7 @@ function do_compile() {
     fi
 	  perl ${GAS2HAS} -i _build/${c}.m68k-gas.s -o _build/${c}.s
 	  rm -f _build/${c}.m68k-gas.s
-	  ${XDEV68K_DIR}/run68/run68 ${HAS} -e -u -w0 ${INCLUDE_FLAGS} _build/${c}.s -o _build/${c}.o
+	  ${RUN68} ${HAS} -e -u -w0 ${INCLUDE_FLAGS} _build/${c}.s -o _build/${c}.o
     if [ ! -f _build/${c}.o ]; then
       return 1
     fi
