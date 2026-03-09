@@ -28,13 +28,13 @@ TARGET_FILE = MP3CONV.X
 DOCUMENT_FILE = MP3CONV.DOC
 
 # Distribution package 
-PACKAGE_FILE = ../MP3CV081.ZIP
+PACKAGE_FILE = ../MP3CV082.ZIP
 
 # ヘッダ検索パス
 INCLUDE_FLAGS = -I${XDEV68K_DIR}/include/xc -I${XDEV68K_DIR}/include/xdev68k -I${LIBMAD_DIR}
 
 # コンパイルフラグ
-COMMON_FLAGS = -m68000 -O3 $(INCLUDE_FLAGS) -z-stack=8192
+COMMON_FLAGS = -m68000 -msoft-float -O3 $(INCLUDE_FLAGS) -z-stack=8192
 CFLAGS = $(COMMON_FLAGS) -Wno-builtin-declaration-mismatch -fcall-used-d2 -fcall-used-a2 \
     -fexec-charset=cp932 -fverbose-asm -fno-defer-pop -D__OPT_INLINE_ASM__
 

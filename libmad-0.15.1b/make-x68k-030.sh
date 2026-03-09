@@ -14,7 +14,7 @@ RUN68=${XDEV68K_DIR}/run68/run68x
 HAS=${XDEV68K_DIR}/x68k_bin/HAS060.X
 
 INCLUDE_FLAGS="-I${XDEV68K_DIR}/include/xc -I${XDEV68K_DIR}/include/xdev68k"
-COMMON_FLAGS="-m${MPU_TYPE} -O3 ${INCLUDE_FLAGS} -z-stack=32768"
+COMMON_FLAGS="-m${MPU_TYPE} -msoft-float -O3 ${INCLUDE_FLAGS} -z-stack=32768"
 CFLAGS="${COMMON_FLAGS} -Wno-builtin-declaration-mismatch -fcall-used-d2 -fcall-used-a2 \
     -fexec-charset=cp932 -fverbose-asm -fno-defer-pop -DFPM_DEFAULT -D_TIME_T_DECLARED -D_CLOCK_T_DECLARED -Dwint_t=int \
 		-DXDEV68K -DFPM_DEFAULT -DOPT_SPEED"
@@ -35,7 +35,7 @@ function do_compile() {
 	  perl ${GAS2HAS} -i ${BUILD_DIR}/${c}.m68k-gas.s -o ${BUILD_DIR}/${c}.s
 	  rm -f ${BUILD_DIR}/${c}.m68k-gas.s
 	  ${RUN68} ${HAS} -e -u -w0 ${INCLUDE_FLAGS} ${BUILD_DIR}/${c}.s -o ${BUILD_DIR}/${c}.o
-    if [ ! -f _build/${c}.o ]; then
+    if [ ! -f ${BUILD_DIR}/${c}.o ]; then
       return 1
     fi
   done
